@@ -22,19 +22,7 @@
     </div>
 
     <div class="stage" aria-hidden="true">
-      <div class="glow"></div>
-      <div class="phone">
-        <div class="screen">
-          <div class="reel a"></div>
-          <div class="reel b"></div>
-          <div class="caption">
-            <strong>竖屏连播</strong>
-            <span>上滑下一部</span>
-          </div>
-        </div>
-      </div>
-      <div class="sheet s1"></div>
-      <div class="sheet s2"></div>
+      <img class="hero-poster" :src="posterImg" alt="" />
     </div>
   </section>
 
@@ -74,6 +62,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import http from '@/utils/http'
+import posterImg from '@/assets/hero-poster.jpg'
 
 const keyword = ref('')
 const category = ref('')
@@ -202,121 +191,14 @@ h1 {
 
 .stage {
   position: relative;
-  min-height: 360px;
   display: grid;
   place-items: center;
 }
-.glow {
-  position: absolute;
-  width: 280px;
-  height: 280px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(110, 59, 114, 0.28), transparent 68%);
-  filter: blur(8px);
-  animation: pulse 4.8s ease-in-out infinite;
-}
-.phone {
-  position: relative;
-  z-index: 2;
-  width: min(220px, 54vw);
-  aspect-ratio: 9 / 17;
-  border-radius: 28px;
-  padding: 10px;
-  background: linear-gradient(160deg, #3a2442, #1c1424);
-  box-shadow:
-    0 28px 60px rgba(28, 20, 36, 0.22),
-    inset 0 0 0 1px rgba(255,255,255,0.12);
-  animation: float 5.5s ease-in-out infinite;
-}
-.screen {
-  position: relative;
+.hero-poster {
   width: 100%;
-  height: 100%;
-  border-radius: 20px;
-  overflow: hidden;
-  background: #120e16;
-}
-.reel {
-  position: absolute;
-  inset: 0;
-  background-size: cover;
-  background-position: center;
-}
-.reel.a {
-  background-image:
-    linear-gradient(180deg, transparent 45%, rgba(18, 14, 22, 0.72)),
-    linear-gradient(145deg, #6e3b72 0%, #3f7a5c 100%);
-  animation: fadeSwap 7s ease-in-out infinite;
-}
-.reel.b {
-  opacity: 0;
-  background-image:
-    linear-gradient(180deg, transparent 45%, rgba(18, 14, 22, 0.72)),
-    linear-gradient(155deg, #4a2952 0%, #2f6b57 55%, #8b4d8c 100%);
-  animation: fadeSwap 7s ease-in-out infinite reverse;
-}
-.caption {
-  position: absolute;
-  left: 14px;
-  right: 14px;
-  bottom: 16px;
-  color: #fff;
-  display: grid;
-  gap: 0.2rem;
-  strong {
-    font-size: 0.95rem;
-  }
-  span {
-    font-size: 0.75rem;
-    opacity: 0.75;
-  }
-}
-.sheet {
-  position: absolute;
-  width: 140px;
-  aspect-ratio: 3 / 4;
+  display: block;
   border-radius: 18px;
-  background: linear-gradient(145deg, rgba(110, 59, 114, 0.55), rgba(63, 122, 92, 0.45));
-  box-shadow: 0 18px 40px rgba(28, 20, 36, 0.12);
-  opacity: 0.55;
-}
-.sheet.s1 {
-  left: 8%;
-  top: 18%;
-  transform: rotate(-12deg);
-  animation: drift 6s ease-in-out infinite;
-}
-.sheet.s2 {
-  right: 6%;
-  bottom: 14%;
-  transform: rotate(10deg);
-  background: linear-gradient(145deg, rgba(63, 122, 92, 0.5), rgba(74, 41, 82, 0.5));
-  animation: drift 6.8s ease-in-out infinite reverse;
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
-}
-@keyframes pulse {
-  0%, 100% { transform: scale(1); opacity: 0.8; }
-  50% { transform: scale(1.08); opacity: 1; }
-}
-@keyframes fadeSwap {
-  0%, 40% { opacity: 1; }
-  50%, 90% { opacity: 0; }
-  100% { opacity: 1; }
-}
-@keyframes drift {
-  0%, 100% { transform: rotate(-12deg) translateY(0); }
-  50% { transform: rotate(-8deg) translateY(8px); }
-}
-.sheet.s2 {
-  animation-name: drift2;
-}
-@keyframes drift2 {
-  0%, 100% { transform: rotate(10deg) translateY(0); }
-  50% { transform: rotate(14deg) translateY(-8px); }
+  box-shadow: 0 24px 50px rgba(28, 20, 36, 0.18);
 }
 
 .cats {
@@ -404,11 +286,9 @@ h1 {
     grid-template-columns: 1fr;
     min-height: auto;
   }
-  .stage { min-height: 320px; }
   .grid { grid-template-columns: repeat(3, 1fr); }
 }
 @media (max-width: 720px) {
-  .sheet { display: none; }
   .grid { grid-template-columns: repeat(2, 1fr); }
 }
 </style>
