@@ -1,6 +1,7 @@
 package com.cms.video.modules.series.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cms.video.common.BizException;
 import com.cms.video.common.PageVo;
@@ -157,6 +158,77 @@ public class SeriesServiceImpl implements SeriesService {
             seriesMapper.updateById(series);
         }
         return series.getId();
+    }
+
+    @Override
+    public Long createByUser(Long userId, SeriesSaveReq req) {
+        Series series = new Series();
+        series.setUserId(userId);
+        series.setTitle(req.getTitle().trim());
+        series.setCover("");
+        series.setIntro(req.getIntro() == null ? "" : req.getIntro());
+        series.setCategory(StringUtils.hasText(req.getCategory()) ? req.getCategory().trim() : "AI");
+        series.setStatus(0);
+        series.setPlayCount(0L);
+        series.setFavCount(0L);
+        series.setEpCount(0);
+        seriesMapper.insert(series);
+        return series.getId();
+    }
+
+    @Override
+    public PageVo<SeriesVo> mySeries(Long userId, long page, long size) {
+        Page<Series> p = seriesMapper.selectPage(new Page<>(page, size),
+                new LambdaQueryWrapper<Series>().eq(Series::getUserId, userId).orderByDesc(Series::getId));
+        return PageVo.of(p.getTotal(), p.getRecords().stream().map(this::toVo).collect(Collectors.toList()));
+    }
+
+    @Override
+    public PageVo<SeriesVo> pendingSeries(long page, long size) {
+        Page<Series> p = seriesMapper.selectPage(new Page<>(page, size),
+                new LambdaQueryWrapper<Series>().eq(Series::getStatus, 0).orderByDesc(Series::getId));
+        return PageVo.of(p.getTotal(), p.getRecords().stream().map(this::toVo).collect(Collectors.toList()));
+    }
+
+    @Override
+    @Transactional
+    public void approveSeries(Long id) {
+        Series series = seriesMapper.selectById(id);
+        if (series == null) {
+            throw new BizException("合集不存在");
+        }
+        if (series.getStatus() == null || series.getStatus() != 0) {
+            throw new BizException("该合集不是待审核状态");
+        }
+        series.setStatus(1);
+        seriesMapper.updateById(series);
+        videoMapper.update(null, new LambdaUpdateWrapper<Video>()
+                .eq(Video::getSeriesId, id)
+                .eq(Video::getStatus, 0)
+                .set(Video::getStatus, 1));
+    }
+
+    @Override
+    @Transactional
+    public void rejectSeries(Long id) {
+        Series series = seriesMapper.selectById(id);
+        if (series == null) {
+            throw new BizException("合集不存在");
+        }
+        if (series.getStatus() == null || series.getStatus() != 0) {
+            throw new BizException("该合集不是待审核状态");
+        }
+        remove(id);
+    }
+
+    @Override
+    public void setCover(Long userId, Long id, String cover) {
+        Series series = seriesMapper.selectById(id);
+        if (series == null || series.getUserId() == null || !series.getUserId().equals(userId)) {
+            throw new BizException("合集不存在");
+        }
+        series.setCover(cover == null ? "" : cover);
+        seriesMapper.updateById(series);
     }
 
     @Override

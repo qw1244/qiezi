@@ -55,6 +55,13 @@ public class UploadServiceImpl implements UploadService {
     @Override
     @Transactional
     public UpJobVo createUserJob(Long userId, UpCreateReq req) {
+        Series series = seriesMapper.selectById(req.getSeriesId());
+        if (series == null) {
+            throw new BizException("合集不存在");
+        }
+        if (series.getUserId() == null || !series.getUserId().equals(userId)) {
+            throw new BizException(403, "只能上传到自己新建的合集");
+        }
         return doCreateJob(0L, userId, req);
     }
 
@@ -237,6 +244,7 @@ public class UploadServiceImpl implements UploadService {
             saveReq.setCosKey(item.getCosKey());
             saveReq.setCover(item.getCover());
             saveReq.setDuration(item.getDuration());
+            // 管理员上传直接上架；用户投稿的视频一律先待审核，等管理员通过
             saveReq.setStatus(job.getUserId() != null ? 0 : 1);
             videoService.save(saveReq);
         }

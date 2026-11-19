@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 public class Series {
     @TableId(type = IdType.AUTO)
     private Long id;
+    private Long userId;
     private String title;
     private String cover;
     private String intro;

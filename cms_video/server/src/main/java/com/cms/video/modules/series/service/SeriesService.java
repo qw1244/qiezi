@@ -18,4 +18,16 @@ public interface SeriesService {
     Long save(SeriesSaveReq req);
 
     void remove(Long id);
+
+    Long createByUser(Long userId, SeriesSaveReq req);
+
+    PageVo<SeriesVo> mySeries(Long userId, long page, long size);
+
+    PageVo<SeriesVo> pendingSeries(long page, long size);
+
+    void approveSeries(Long id);
+
+    void rejectSeries(Long id);
+
+    void setCover(Long userId, Long id, String cover);
 }

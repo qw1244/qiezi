@@ -146,8 +146,12 @@ public class VideoServiceImpl implements VideoService {
 
     @Override
     public PageVo<VideoVo> pendingVideos(long page, long size) {
+        // 只列已上架合集里的待审核视频；待审核合集里的视频走合集审核，不在这里重复出现
         Page<Video> p = videoMapper.selectPage(new Page<>(page, size),
-                new LambdaQueryWrapper<Video>().eq(Video::getStatus, 0).orderByDesc(Video::getCreatedAt));
+                new LambdaQueryWrapper<Video>()
+                        .eq(Video::getStatus, 0)
+                        .inSql(Video::getSeriesId, "SELECT id FROM series WHERE status = 1")
+                        .orderByDesc(Video::getCreatedAt));
         List<VideoVo> list = p.getRecords().stream().map(v -> {
             VideoVo vo = toVo(v);
             Series s = seriesMapper.selectById(v.getSeriesId());
