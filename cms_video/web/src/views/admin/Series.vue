@@ -77,7 +77,7 @@ const keyword = ref('')
 const page = ref(1)
 const total = ref(0)
 const visible = ref(false)
-const form = reactive<any>({ id: null, title: '', cover: '', intro: '', category: '真人', status: 1 })
+const form = reactive<any>({ id: null, title: '', cover: '', intro: '', category: 'AI', status: 1 })
 
 function thumbStyle(cover: string) {
   return cover
@@ -92,7 +92,7 @@ async function load() {
 }
 
 function openEdit(row?: any) {
-  Object.assign(form, { id: null, title: '', cover: '', intro: '', category: '真人', status: 1 }, row || {})
+  Object.assign(form, { id: null, title: '', cover: '', intro: '', category: 'AI', status: 1 }, row || {})
   visible.value = true
 }
 

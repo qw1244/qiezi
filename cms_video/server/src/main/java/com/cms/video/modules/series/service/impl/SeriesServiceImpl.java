@@ -149,7 +149,7 @@ public class SeriesServiceImpl implements SeriesService {
         series.setTitle(req.getTitle().trim());
         series.setCover(req.getCover() == null ? "" : req.getCover());
         series.setIntro(req.getIntro() == null ? "" : req.getIntro());
-        series.setCategory(StringUtils.hasText(req.getCategory()) ? req.getCategory().trim() : "真人");
+        series.setCategory(StringUtils.hasText(req.getCategory()) ? req.getCategory().trim() : "AI");
         series.setStatus(req.getStatus() == null ? 1 : req.getStatus());
         if (req.getId() == null) {
             seriesMapper.insert(series);
