@@ -9,7 +9,7 @@
       <h2>新建合集</h2>
       <div class="row">
         <span class="label">标题</span>
-        <el-input v-model="form.title" placeholder="合集标题，比如：重生之我在深圳打工" style="width: 320px" :disabled="uploading" />
+        <el-input v-model="form.title" placeholder="合集标题，比如：重生之我在深圳打工" style="width: 100%; max-width: 320px" :disabled="uploading" />
       </div>
       <div class="row">
         <span class="label">分类</span>
@@ -25,7 +25,7 @@
           type="textarea"
           :rows="2"
           placeholder="简单介绍这个合集（可不填）"
-          style="width: 420px"
+          style="width: 100%; max-width: 420px"
           :disabled="uploading"
         />
       </div>
@@ -75,7 +75,7 @@
       <h2>传到我的合集</h2>
       <div class="row">
         <span class="label">合集</span>
-        <el-select v-model="existingSeriesId" placeholder="选择已通过的合集" style="width: 320px" :disabled="uploading">
+        <el-select v-model="existingSeriesId" placeholder="选择已通过的合集" style="width: 100%; max-width: 320px" :disabled="uploading">
           <el-option
             v-for="s in approvedSeries"
             :key="s.id"

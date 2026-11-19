@@ -171,7 +171,7 @@ function onLogout() {
   background: #0b0b0f;
 }
 @media (max-width: 720px) {
-  .links { display: none; }
-  .nav-inner { gap: 0.75rem; }
+  .nav-inner { gap: 0.75rem; flex-wrap: wrap; }
+  .links { display: flex; order: 3; flex-basis: 100%; padding-bottom: 0.6rem; overflow-x: auto; }
 }
 </style>
