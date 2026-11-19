@@ -40,10 +40,13 @@ public class SeriesServiceImpl implements SeriesService {
     private final CosService cosService;
 
     @Override
-    public PageVo<SeriesVo> pageFront(String keyword, long page, long size, Long userId) {
+    public PageVo<SeriesVo> pageFront(String keyword, String category, long page, long size, Long userId) {
         LambdaQueryWrapper<Series> qw = new LambdaQueryWrapper<Series>().eq(Series::getStatus, 1);
         if (StringUtils.hasText(keyword)) {
             qw.like(Series::getTitle, keyword);
+        }
+        if (StringUtils.hasText(category)) {
+            qw.eq(Series::getCategory, category);
         }
         qw.orderByDesc(Series::getId);
         Page<Series> p = seriesMapper.selectPage(new Page<>(page, size), qw);
@@ -146,6 +149,7 @@ public class SeriesServiceImpl implements SeriesService {
         series.setTitle(req.getTitle().trim());
         series.setCover(req.getCover() == null ? "" : req.getCover());
         series.setIntro(req.getIntro() == null ? "" : req.getIntro());
+        series.setCategory(StringUtils.hasText(req.getCategory()) ? req.getCategory().trim() : "真人");
         series.setStatus(req.getStatus() == null ? 1 : req.getStatus());
         if (req.getId() == null) {
             seriesMapper.insert(series);
@@ -218,6 +222,7 @@ public class SeriesServiceImpl implements SeriesService {
         vo.setTitle(s.getTitle());
         vo.setCover(s.getCover());
         vo.setIntro(s.getIntro());
+        vo.setCategory(s.getCategory());
         vo.setStatus(s.getStatus());
         vo.setEpCount(s.getEpCount());
         vo.setPlayCount(s.getPlayCount());
@@ -231,6 +236,7 @@ public class SeriesServiceImpl implements SeriesService {
         vo.setTitle(s.getTitle());
         vo.setCover(s.getCover());
         vo.setIntro(s.getIntro());
+        vo.setCategory(s.getCategory());
         vo.setStatus(s.getStatus());
         vo.setEpCount(s.getEpCount());
         vo.setPlayCount(s.getPlayCount());

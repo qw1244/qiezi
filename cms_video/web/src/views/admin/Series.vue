@@ -16,6 +16,7 @@
           </template>
         </el-table-column>
         <el-table-column prop="title" label="标题" min-width="160" />
+        <el-table-column prop="category" label="分类" width="90" />
         <el-table-column prop="epCount" label="集数" width="80" />
         <el-table-column prop="playCount" label="播放" width="90" />
         <el-table-column prop="favCount" label="收藏" width="90" />
@@ -44,6 +45,12 @@
           <CosImageUpload v-model="form.cover" folder="cover" />
         </el-form-item>
         <el-form-item label="简介"><el-input v-model="form.intro" type="textarea" rows="3" /></el-form-item>
+        <el-form-item label="分类">
+          <el-select v-model="form.category" placeholder="选择分类" style="width:180px">
+            <el-option label="真人" value="真人" />
+            <el-option label="AI" value="AI" />
+          </el-select>
+        </el-form-item>
         <el-form-item label="状态">
           <el-radio-group v-model="form.status">
             <el-radio :value="1">上架</el-radio>
@@ -70,7 +77,7 @@ const keyword = ref('')
 const page = ref(1)
 const total = ref(0)
 const visible = ref(false)
-const form = reactive<any>({ id: null, title: '', cover: '', intro: '', status: 1 })
+const form = reactive<any>({ id: null, title: '', cover: '', intro: '', category: '真人', status: 1 })
 
 function thumbStyle(cover: string) {
   return cover
@@ -85,7 +92,7 @@ async function load() {
 }
 
 function openEdit(row?: any) {
-  Object.assign(form, row || { id: null, title: '', cover: '', intro: '', status: 1 })
+  Object.assign(form, { id: null, title: '', cover: '', intro: '', category: '真人', status: 1 }, row || {})
   visible.value = true
 }
 

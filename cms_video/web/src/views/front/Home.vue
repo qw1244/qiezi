@@ -38,6 +38,15 @@
     </div>
   </section>
 
+  <div class="cats">
+    <button
+      v-for="c in cats"
+      :key="c"
+      :class="{ active: (c === '全部' ? '' : c) === category }"
+      @click="pickCat(c)"
+    >{{ c }}</button>
+  </div>
+
   <section class="grid">
     <router-link v-for="item in list" :key="item.id" class="card" :to="`/series/${item.id}`">
       <div class="cover" :style="coverStyle(item.cover)">
@@ -67,6 +76,8 @@ import { onMounted, ref } from 'vue'
 import http from '@/utils/http'
 
 const keyword = ref('')
+const category = ref('')
+const cats = ['全部', '真人', 'AI']
 const list = ref<any[]>([])
 const page = ref(1)
 const size = 12
@@ -81,9 +92,15 @@ function coverStyle(cover: string) {
   }
 }
 
+function pickCat(c: string) {
+  category.value = c === '全部' ? '' : c
+  page.value = 1
+  load()
+}
+
 async function load() {
   const res: any = await http.get('/series/list', {
-    params: { keyword: keyword.value, page: page.value, size },
+    params: { keyword: keyword.value, category: category.value || undefined, page: page.value, size },
   })
   list.value = res.data.list || []
   total.value = res.data.total || 0
@@ -300,6 +317,33 @@ h1 {
 @keyframes drift2 {
   0%, 100% { transform: rotate(10deg) translateY(0); }
   50% { transform: rotate(14deg) translateY(-8px); }
+}
+
+.cats {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.4rem;
+}
+.cats button {
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--ink);
+  border-radius: 999px;
+  padding: 0.5rem 1.2rem;
+  font: inherit;
+  font-size: 0.92rem;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+.cats button:hover {
+  border-color: rgba(110, 59, 114, 0.4);
+}
+.cats button.active {
+  background: linear-gradient(135deg, #6e3b72, #4a2952);
+  border-color: transparent;
+  color: #fff;
+  font-weight: 600;
 }
 
 .grid {

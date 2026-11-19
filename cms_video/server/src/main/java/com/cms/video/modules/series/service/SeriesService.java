@@ -7,7 +7,7 @@ import com.cms.video.modules.series.vo.SeriesVo;
 
 public interface SeriesService {
 
-    PageVo<SeriesVo> pageFront(String keyword, long page, long size, Long userId);
+    PageVo<SeriesVo> pageFront(String keyword, String category, long page, long size, Long userId);
 
     SeriesDetailVo detail(Long id, Long userId);
 
