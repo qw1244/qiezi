@@ -15,6 +15,7 @@ const router = createRouter({
         { path: 'login', name: 'login', component: () => import('@/views/front/Login.vue'), meta: { bare: true } },
         { path: 'register', name: 'register', component: () => import('@/views/front/Register.vue'), meta: { bare: true } },
         { path: 'profile', name: 'profile', component: () => import('@/views/front/Profile.vue'), meta: { auth: true } },
+        { path: 'upload', name: 'upload', component: () => import('@/views/front/Upload.vue'), meta: { auth: true } },
       ],
     },
     {
@@ -35,6 +36,7 @@ const router = createRouter({
         { path: 'cos', name: 'admin-cos', component: () => import('@/views/admin/CosCfg.vue') },
         { path: 'cos/files', name: 'admin-cos-files', component: () => import('@/views/admin/CosFiles.vue') },
         { path: 'upload', name: 'admin-upload', component: () => import('@/views/admin/UploadJobs.vue') },
+        { path: 'review', name: 'admin-review', component: () => import('@/views/admin/Review.vue') },
         { path: 'oplog', name: 'admin-oplog', component: () => import('@/views/admin/OpLog.vue') },
         { path: 'pwd', name: 'admin-pwd', component: () => import('@/views/admin/Pwd.vue') },
       ],

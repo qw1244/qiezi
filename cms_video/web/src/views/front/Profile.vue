@@ -31,6 +31,7 @@
       <div class="quick">
         <router-link to="/fav">收藏</router-link>
         <router-link to="/history">足迹</router-link>
+        <router-link to="/upload">投稿</router-link>
         <button type="button" @click="onLogout">退出</button>
       </div>
     </header>

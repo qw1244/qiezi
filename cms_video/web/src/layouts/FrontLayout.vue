@@ -10,6 +10,7 @@
           <router-link to="/">发现</router-link>
           <router-link to="/fav">收藏</router-link>
           <router-link to="/history">足迹</router-link>
+          <router-link to="/upload">投稿</router-link>
         </nav>
         <div class="actions">
           <template v-if="user.token">

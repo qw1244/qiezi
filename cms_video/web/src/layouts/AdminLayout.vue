@@ -69,6 +69,7 @@ import {
   Box,
   Collection,
   DataAnalysis,
+  Document,
   FolderOpened,
   Key,
   Notebook,
@@ -87,6 +88,7 @@ const businessMenus = [
   { path: '/admin/users', label: '用户管理', icon: User },
   { path: '/admin/series', label: '合集管理', icon: Collection },
   { path: '/admin/upload', label: '上传记录', icon: Upload },
+  { path: '/admin/review', label: '投稿审核', icon: Document },
 ]
 
 const systemMenus = [

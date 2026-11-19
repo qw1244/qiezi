@@ -1,7 +1,9 @@
 package com.cms.video.modules.video.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cms.video.common.BizException;
+import com.cms.video.common.PageVo;
 import com.cms.video.modules.cos.service.CosService;
 import com.cms.video.modules.interact.entity.VLike;
 import com.cms.video.modules.interact.entity.WatchLog;
@@ -20,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -139,6 +142,49 @@ public class VideoServiceImpl implements VideoService {
             video.setDuration(req.getDuration());
         }
         video.setStatus(req.getStatus() == null ? 1 : req.getStatus());
+    }
+
+    @Override
+    public PageVo<VideoVo> pendingVideos(long page, long size) {
+        Page<Video> p = videoMapper.selectPage(new Page<>(page, size),
+                new LambdaQueryWrapper<Video>().eq(Video::getStatus, 0).orderByDesc(Video::getCreatedAt));
+        List<VideoVo> list = p.getRecords().stream().map(v -> {
+            VideoVo vo = toVo(v);
+            Series s = seriesMapper.selectById(v.getSeriesId());
+            if (s != null) {
+                vo.setSeriesTitle(s.getTitle());
+            }
+            return vo;
+        }).collect(Collectors.toList());
+        return PageVo.of(p.getTotal(), list);
+    }
+
+    @Override
+    @Transactional
+    public void approve(Long id) {
+        Video video = videoMapper.selectById(id);
+        if (video == null) {
+            throw new BizException("视频不存在");
+        }
+        if (video.getStatus() == null || video.getStatus() != 0) {
+            throw new BizException("该视频不是待审核状态");
+        }
+        video.setStatus(1);
+        videoMapper.updateById(video);
+        refreshEpCount(video.getSeriesId());
+    }
+
+    @Override
+    @Transactional
+    public void reject(Long id) {
+        Video video = videoMapper.selectById(id);
+        if (video == null) {
+            throw new BizException("视频不存在");
+        }
+        if (video.getStatus() == null || video.getStatus() != 0) {
+            throw new BizException("该视频不是待审核状态");
+        }
+        remove(id);
     }
 
     @Override

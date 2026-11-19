@@ -14,6 +14,7 @@ public class UpJob {
     @TableId(type = IdType.AUTO)
     private Long id;
     private Long adminId;
+    private Long userId;
     private Long seriesId;
     private Integer total;
     private Integer okNum;

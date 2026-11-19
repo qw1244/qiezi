@@ -1,5 +1,6 @@
 package com.cms.video.modules.video.service;
 
+import com.cms.video.common.PageVo;
 import com.cms.video.modules.video.dto.VideoSaveReq;
 import com.cms.video.modules.video.vo.VideoVo;
 
@@ -12,4 +13,10 @@ public interface VideoService {
     void remove(Long id);
 
     void renumber(Long seriesId);
+
+    PageVo<VideoVo> pendingVideos(long page, long size);
+
+    void approve(Long id);
+
+    void reject(Long id);
 }

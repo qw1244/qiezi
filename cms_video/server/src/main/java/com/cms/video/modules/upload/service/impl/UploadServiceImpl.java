@@ -49,6 +49,16 @@ public class UploadServiceImpl implements UploadService {
     @Override
     @Transactional
     public UpJobVo createJob(Long adminId, UpCreateReq req) {
+        return doCreateJob(adminId, null, req);
+    }
+
+    @Override
+    @Transactional
+    public UpJobVo createUserJob(Long userId, UpCreateReq req) {
+        return doCreateJob(0L, userId, req);
+    }
+
+    private UpJobVo doCreateJob(Long adminId, Long userId, UpCreateReq req) {
         Series series = seriesMapper.selectById(req.getSeriesId());
         if (series == null) {
             throw new BizException("合集不存在");
@@ -58,6 +68,7 @@ public class UploadServiceImpl implements UploadService {
         }
         UpJob job = new UpJob();
         job.setAdminId(adminId);
+        job.setUserId(userId);
         job.setSeriesId(req.getSeriesId());
         job.setTotal(req.getFiles().size());
         job.setOkNum(0);
@@ -165,6 +176,36 @@ public class UploadServiceImpl implements UploadService {
     }
 
     @Override
+    public void userConfirm(Long userId, UpConfirmReq req) {
+        UpItem item = upItemMapper.selectById(req.getItemId());
+        if (item == null) {
+            throw new BizException("上传明细不存在");
+        }
+        UpJob job = upJobMapper.selectById(item.getJobId());
+        if (job == null || job.getUserId() == null || !job.getUserId().equals(userId)) {
+            throw new BizException(403, "无权限");
+        }
+        confirm(req);
+    }
+
+    @Override
+    public UpJobVo myJobDetail(Long userId, Long jobId) {
+        UpJob job = upJobMapper.selectById(jobId);
+        if (job == null || job.getUserId() == null || !job.getUserId().equals(userId)) {
+            throw new BizException("任务不存在");
+        }
+        return detail(jobId);
+    }
+
+    @Override
+    public PageVo<UpJobVo> myJobs(Long userId, long page, long size) {
+        Page<UpJob> p = upJobMapper.selectPage(new Page<>(page, size),
+                new LambdaQueryWrapper<UpJob>().eq(UpJob::getUserId, userId).orderByDesc(UpJob::getId));
+        List<UpJobVo> list = p.getRecords().stream().map(j -> toJobVo(j, null)).collect(Collectors.toList());
+        return PageVo.of(p.getTotal(), list);
+    }
+
+    @Override
     @Transactional
     public void finalizeJob(Long jobId) {
         UpJob job = upJobMapper.selectById(jobId);
@@ -196,7 +237,7 @@ public class UploadServiceImpl implements UploadService {
             saveReq.setCosKey(item.getCosKey());
             saveReq.setCover(item.getCover());
             saveReq.setDuration(item.getDuration());
-            saveReq.setStatus(1);
+            saveReq.setStatus(job.getUserId() != null ? 0 : 1);
             videoService.save(saveReq);
         }
         refreshJobCount(job);
