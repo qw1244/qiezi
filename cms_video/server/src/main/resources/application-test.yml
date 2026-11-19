@@ -1,0 +1,9 @@
+# 测试服务器（当前宝塔环境 101.35.2.224）
+spring:
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3306/cms_video?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+    username: cms_video
+    password: "8HkRsW7NLPbPjnbi"
+  data:
+    redis:
+      host: 127.0.0.1
