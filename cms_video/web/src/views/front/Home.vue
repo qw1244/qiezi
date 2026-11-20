@@ -30,7 +30,7 @@
     <button
       v-for="c in cats"
       :key="c"
-      :class="{ active: (c === '全部' ? '' : c) === category }"
+      :class="{ active: c === category }"
       @click="pickCat(c)"
     >{{ c }}</button>
   </div>
@@ -101,8 +101,8 @@ import posterImg from '@/assets/hero-poster.jpg'
 
 const user = useUserStore()
 const keyword = ref('')
-const category = ref('')
-const cats = ['全部', '真人', 'AI']
+const category = ref('AI')
+const cats = ['AI', '真人']
 const sort = ref('latest')
 const sorts = [
   { value: 'latest', label: '最新更新' },
@@ -126,7 +126,7 @@ function coverStyle(cover: string) {
 }
 
 function pickCat(c: string) {
-  category.value = c === '全部' ? '' : c
+  category.value = c
   page.value = 1
   load()
 }
