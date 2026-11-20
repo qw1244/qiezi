@@ -656,11 +656,11 @@ onBeforeUnmount(() => {
   z-index: 4;
   pointer-events: none;
   user-select: none;
-  color: rgba(255, 255, 255, 0.75);
+  color: rgba(255, 255, 255, 0.12);
   font-size: 0.8rem;
   font-weight: 600;
   letter-spacing: 0.04em;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
 }
 .toast {
   position: absolute;
