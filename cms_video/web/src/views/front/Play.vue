@@ -17,6 +17,7 @@
                 @ended="onEnded"
               />
               <div v-if="tip" class="toast">{{ tip }}</div>
+              <div class="watermark">免费看qz53.com</div>
             </div>
           </Transition>
 
@@ -41,6 +42,10 @@
             {{ episodes.length }} 集全
             <span>·</span>
             {{ video.likeCount || 0 }} 赞
+            <span>·</span>
+            {{ favCount }} 收藏
+            <span>·</span>
+            {{ commentTotal }} 评论
           </p>
           <p v-if="seriesIntro" class="intro">{{ seriesIntro }}</p>
         </div>
@@ -49,6 +54,10 @@
           <button type="button" class="act" :class="{ liked: video.liked }" @click="toggleLike">
             {{ video.liked ? '已赞' : '点赞' }}
           </button>
+          <button type="button" class="act" :class="{ liked: fav }" @click="toggleFav">
+            {{ fav ? '已收藏' : '收藏' }}
+          </button>
+          <button type="button" class="act" @click="shareVideo">分享</button>
           <button type="button" class="act" @click="$router.push(`/series/${video.seriesId}`)">详情</button>
           <button type="button" class="act ghost" @click="playPrev" :disabled="!prevEp || animating">上一集</button>
           <button type="button" class="act primary" @click="playNext(false)" :disabled="animating">下一集</button>
@@ -75,12 +84,52 @@
         </div>
       </aside>
     </div>
+
+    <section class="comments">
+      <div class="comments-inner">
+        <div class="cmt-head">
+          <strong>评论</strong>
+          <span>{{ commentTotal }} 条</span>
+        </div>
+        <div class="cmt-post">
+          <el-input
+            v-model="commentText"
+            type="textarea"
+            :rows="2"
+            maxlength="500"
+            show-word-limit
+            placeholder="写下你的评论…"
+          />
+          <el-button type="primary" :loading="posting" :disabled="!commentText.trim()" @click="postComment">
+            发布
+          </el-button>
+        </div>
+        <div v-if="!comments.length" class="cmt-empty">暂无评论，快来抢沙发</div>
+        <ul v-else class="cmt-list">
+          <li v-for="c in comments" :key="c.id" class="cmt">
+            <span class="cmt-avatar">{{ (c.nickname || '匿').slice(0, 1) }}</span>
+            <div class="cmt-body">
+              <p class="cmt-name">
+                {{ c.nickname || '匿名用户' }}
+                <span class="cmt-time">{{ formatTime(c.createdAt) }}</span>
+              </p>
+              <p class="cmt-text">{{ c.content }}</p>
+            </div>
+            <el-button v-if="c.mine" link type="danger" size="small" @click="deleteComment(c)">删除</el-button>
+          </li>
+        </ul>
+        <div v-if="commentTotal > comments.length" class="cmt-more">
+          <el-button link @click="loadComments(commentPage + 1)">加载更多</el-button>
+        </div>
+      </div>
+    </section>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { ElMessageBox } from 'element-plus'
 import http from '@/utils/http'
 import { useUserStore } from '@/stores/user'
 
@@ -94,6 +143,13 @@ const player = ref<HTMLVideoElement | null>(null)
 const orient = ref<'landscape' | 'portrait'>('portrait')
 const autoplay = ref(localStorage.getItem('qiezi_autoplay') !== '0')
 const tip = ref('')
+const fav = ref(false)
+const favCount = ref(0)
+const comments = ref<any[]>([])
+const commentTotal = ref(0)
+const commentPage = ref(1)
+const commentText = ref('')
+const posting = ref(false)
 const slideName = ref<'slide-next' | 'slide-prev'>('slide-next')
 const animating = ref(false)
 let timer: number | undefined
@@ -173,6 +229,7 @@ async function load() {
   const res: any = await http.get(`/video/play/${route.params.id}`)
   video.value = res.data
   await loadEpisodes(res.data.seriesId)
+  await loadComments(1)
   await nextTick()
   if (player.value) {
     if (video.value.progress > 0) {
@@ -191,6 +248,8 @@ async function loadEpisodes(seriesId: number) {
   const res: any = await http.get(`/series/${seriesId}`)
   episodes.value = res.data?.videos || []
   seriesIntro.value = res.data?.intro || ''
+  fav.value = !!res.data?.fav
+  favCount.value = res.data?.favCount || 0
 }
 
 function onMeta() {
@@ -279,6 +338,95 @@ async function toggleLike() {
     video.value.liked = true
     video.value.likeCount = (video.value.likeCount || 0) + 1
   }
+}
+
+async function toggleFav() {
+  if (!user.token) {
+    router.push({ path: '/login', query: { redirect: route.fullPath } })
+    return
+  }
+  const seriesId = video.value.seriesId
+  if (!seriesId) return
+  if (fav.value) {
+    await http.delete(`/interact/fav/${seriesId}`)
+    fav.value = false
+    favCount.value = Math.max(0, favCount.value - 1)
+  } else {
+    await http.post(`/interact/fav/${seriesId}`)
+    fav.value = true
+    favCount.value = favCount.value + 1
+  }
+}
+
+async function shareVideo() {
+  const url = window.location.href
+  try {
+    await navigator.clipboard.writeText(url)
+    showTip('链接已复制，快去分享吧')
+  } catch {
+    const ta = document.createElement('textarea')
+    ta.value = url
+    ta.style.position = 'fixed'
+    ta.style.opacity = '0'
+    document.body.appendChild(ta)
+    ta.select()
+    try {
+      document.execCommand('copy')
+      showTip('链接已复制，快去分享吧')
+    } catch {
+      showTip(url)
+    }
+    document.body.removeChild(ta)
+  }
+}
+
+async function loadComments(page: number) {
+  if (!video.value?.id) return
+  const res: any = await http.get(`/comments/video/${video.value.id}`, {
+    params: { page, size: 10 },
+  })
+  commentPage.value = page
+  commentTotal.value = res.data?.total || 0
+  const list = res.data?.list || []
+  comments.value = page === 1 ? list : [...comments.value, ...list]
+}
+
+async function postComment() {
+  if (!user.token) {
+    router.push({ path: '/login', query: { redirect: route.fullPath } })
+    return
+  }
+  const text = commentText.value.trim()
+  if (!text || posting.value) return
+  posting.value = true
+  try {
+    const res: any = await http.post('/comments', { videoId: video.value.id, content: text })
+    if (res.data) {
+      comments.value = [res.data, ...comments.value]
+      commentTotal.value = commentTotal.value + 1
+    } else {
+      await loadComments(1)
+    }
+    commentText.value = ''
+  } finally {
+    posting.value = false
+  }
+}
+
+async function deleteComment(c: any) {
+  try {
+    await ElMessageBox.confirm('确定删除这条评论吗？', '提示', { type: 'warning' })
+  } catch {
+    return
+  }
+  await http.delete(`/comments/${c.id}`)
+  comments.value = comments.value.filter((item: any) => item.id !== c.id)
+  commentTotal.value = Math.max(0, commentTotal.value - 1)
+}
+
+function formatTime(t: string) {
+  if (!t) return ''
+  return String(t).replace('T', ' ').slice(0, 16)
 }
 
 function onKey(e: KeyboardEvent) {
@@ -437,6 +585,19 @@ onBeforeUnmount(() => {
 .tool.on {
   background: rgba(254, 44, 85, 0.92);
 }
+.watermark {
+  position: absolute;
+  right: 12px;
+  bottom: 56px;
+  z-index: 4;
+  pointer-events: none;
+  user-select: none;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
+}
 .toast {
   position: absolute;
   left: 50%;
@@ -562,6 +723,93 @@ onBeforeUnmount(() => {
   background: #fe2c55;
   color: #fff;
   box-shadow: 0 0 0 1px rgba(254, 44, 85, 0.45);
+}
+.comments {
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 1.5rem 1.5rem 2rem;
+}
+.comments-inner {
+  max-width: 860px;
+  margin: 0 auto;
+}
+.cmt-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  strong { font-size: 1.05rem; }
+  span {
+    color: rgba(244, 241, 234, 0.5);
+    font-size: 0.82rem;
+  }
+}
+.cmt-post {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 1rem;
+  align-items: flex-start;
+}
+.cmt-post .el-textarea {
+  flex: 1;
+}
+.cmt-empty {
+  margin-top: 1.2rem;
+  padding: 1.4rem 0;
+  text-align: center;
+  color: rgba(244, 241, 234, 0.45);
+  font-size: 0.88rem;
+}
+.cmt-list {
+  list-style: none;
+  margin: 1rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.cmt {
+  display: flex;
+  gap: 0.7rem;
+  align-items: flex-start;
+}
+.cmt-avatar {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #fe2c55, #6e3b72);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+.cmt-body {
+  flex: 1;
+  min-width: 0;
+}
+.cmt-name {
+  margin: 0;
+  color: rgba(244, 241, 234, 0.9);
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+.cmt-time {
+  margin-left: 0.5rem;
+  color: rgba(244, 241, 234, 0.4);
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+.cmt-text {
+  margin: 0.3rem 0 0;
+  color: rgba(244, 241, 234, 0.85);
+  font-size: 0.9rem;
+  line-height: 1.55;
+  word-break: break-word;
+}
+.cmt-more {
+  margin-top: 1rem;
+  text-align: center;
 }
 @media (max-width: 980px) {
   .workspace {

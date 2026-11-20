@@ -35,6 +35,36 @@
     >{{ c }}</button>
   </div>
 
+  <div class="sorts">
+    <button
+      v-for="s in sorts"
+      :key="s.value"
+      :class="{ active: sort === s.value }"
+      @click="pickSort(s.value)"
+    >{{ s.label }}</button>
+    <span v-if="tag" class="tag-filter">#{{ tag }} <button class="tag-clear" @click="clearTag">✕</button></span>
+  </div>
+
+  <section v-if="user.token && history.length" class="continue">
+    <div class="cont-head">
+      <h2>继续观看</h2>
+      <router-link class="more" to="/history">全部足迹 →</router-link>
+    </div>
+    <div class="cont-row">
+      <router-link
+        v-for="item in history"
+        :key="item.id"
+        class="cont-card"
+        :to="`/play/${item.lastVideoId}`"
+      >
+        <div class="cont-cover" :style="coverStyle(item.cover)">
+          <span class="badge">第{{ item.lastEpNo || 1 }}集 · {{ item.lastProgress || 0 }}%</span>
+        </div>
+        <p class="cont-title">{{ item.title }}</p>
+      </router-link>
+    </div>
+  </section>
+
   <section class="grid">
     <router-link v-for="item in list" :key="item.id" class="card" :to="`/series/${item.id}`">
       <div class="cover" :style="coverStyle(item.cover)">
@@ -43,6 +73,10 @@
       <div class="meta">
         <h3>{{ item.title }}</h3>
         <p>{{ item.intro || '暂无简介' }}</p>
+        <p class="stats">▶ {{ item.playCount || 0 }} · ❤ {{ item.likeCount || 0 }}</p>
+        <div v-if="item.tags" class="tags">
+          <span v-for="t in splitTags(item.tags)" :key="t" class="tag" @click.prevent.stop="pickTag(t)">#{{ t }}</span>
+        </div>
       </div>
     </router-link>
   </section>
@@ -62,12 +96,22 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import http from '@/utils/http'
+import { useUserStore } from '@/stores/user'
 import posterImg from '@/assets/hero-poster.jpg'
 
+const user = useUserStore()
 const keyword = ref('')
 const category = ref('')
 const cats = ['全部', '真人', 'AI']
+const sort = ref('latest')
+const sorts = [
+  { value: 'latest', label: '最新更新' },
+  { value: 'hot', label: '当前热播' },
+  { value: 'likes', label: '点赞最多' },
+]
+const tag = ref('')
 const list = ref<any[]>([])
+const history = ref<any[]>([])
 const page = ref(1)
 const size = 12
 const total = ref(0)
@@ -87,15 +131,50 @@ function pickCat(c: string) {
   load()
 }
 
+function pickSort(v: string) {
+  sort.value = v
+  page.value = 1
+  load()
+}
+
+function splitTags(tags: string) {
+  return (tags || '').split(',').map((t) => t.trim()).filter(Boolean)
+}
+
+function pickTag(t: string) {
+  tag.value = t
+  page.value = 1
+  load()
+}
+
+function clearTag() {
+  tag.value = ''
+  page.value = 1
+  load()
+}
+
 async function load() {
   const res: any = await http.get('/series/list', {
-    params: { keyword: keyword.value, category: category.value || undefined, page: page.value, size },
+    params: { keyword: keyword.value, category: category.value || undefined, tag: tag.value || undefined, sort: sort.value, page: page.value, size },
   })
   list.value = res.data.list || []
   total.value = res.data.total || 0
 }
 
-onMounted(load)
+async function loadHistory() {
+  if (!user.token) return
+  try {
+    const res: any = await http.get('/interact/history', { params: { page: 1, size: 8 } })
+    history.value = (res.data.list || []).filter((item: any) => item.lastVideoId)
+  } catch {
+    history.value = []
+  }
+}
+
+onMounted(() => {
+  load()
+  loadHistory()
+})
 </script>
 
 <style scoped lang="scss">
@@ -228,6 +307,87 @@ h1 {
   font-weight: 600;
 }
 
+.sorts {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 1.4rem;
+}
+.sorts button {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.92rem;
+  cursor: pointer;
+  padding: 0.3rem 0.2rem;
+}
+.sorts button.active {
+  color: var(--ink);
+  font-weight: 700;
+  border-bottom: 2px solid var(--accent);
+}
+.tag-filter {
+  margin-left: auto;
+  font-size: 0.88rem;
+  color: var(--accent);
+}
+.tag-clear {
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+  font: inherit;
+}
+
+.continue {
+  margin-bottom: 1.6rem;
+}
+.cont-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.8rem;
+  h2 {
+    margin: 0;
+    font-size: 1.15rem;
+  }
+  .more {
+    color: var(--muted);
+    font-size: 0.86rem;
+  }
+}
+.cont-row {
+  display: flex;
+  gap: 0.9rem;
+  overflow-x: auto;
+  padding-bottom: 0.4rem;
+  scroll-snap-type: x mandatory;
+}
+.cont-card {
+  flex: 0 0 150px;
+  scroll-snap-align: start;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.cont-cover {
+  aspect-ratio: 3 / 4;
+  background-size: cover;
+  background-position: center;
+  position: relative;
+}
+.cont-title {
+  margin: 0;
+  padding: 0.6rem 0.7rem 0.75rem;
+  font-size: 0.88rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -274,6 +434,27 @@ h1 {
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
+  }
+  .stats {
+    margin-top: 0.45rem;
+    font-size: 0.82rem;
+  }
+  .tags {
+    display: flex;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+    margin-top: 0.55rem;
+  }
+  .tag {
+    font-size: 0.78rem;
+    color: var(--accent);
+    background: rgba(110, 59, 114, 0.08);
+    border-radius: 999px;
+    padding: 0.15rem 0.55rem;
+    cursor: pointer;
+  }
+  .tag:hover {
+    background: rgba(110, 59, 114, 0.16);
   }
 }
 .pager {

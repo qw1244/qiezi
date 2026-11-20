@@ -9,10 +9,12 @@ public class SeriesVo {
     private String cover;
     private String intro;
     private String category;
+    private String tags;
     private Integer status;
     private Integer epCount;
     private Long playCount;
     private Long favCount;
+    private Long likeCount;
     private Boolean fav;
     private Integer firstProgress;
     

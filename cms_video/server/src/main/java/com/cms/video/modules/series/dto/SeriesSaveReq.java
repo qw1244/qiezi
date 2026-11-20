@@ -11,5 +11,6 @@ public class SeriesSaveReq {
     private String cover;
     private String intro;
     private String category;
+    private String tags;
     private Integer status;
 }

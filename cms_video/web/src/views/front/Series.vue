@@ -5,6 +5,9 @@
       <div class="info">
         <h1>{{ detail.title }}</h1>
         <p class="intro">{{ detail.intro || '暂无简介' }}</p>
+        <p v-if="detail.tags" class="tags">
+          <span v-for="t in detail.tags.split(',')" :key="t" class="tag">#{{ t }}</span>
+        </p>
         <div class="stats">
           <span>{{ detail.epCount || 0 }} 集</span>
           <span>{{ detail.playCount || 0 }} 播放</span>
@@ -119,6 +122,19 @@ onMounted(load)
   margin: 1rem 0;
   color: var(--muted);
   font-size: 0.92rem;
+}
+.tags {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin: 0.2rem 0 0.4rem;
+}
+.tag {
+  font-size: 0.82rem;
+  color: var(--accent);
+  background: rgba(110, 59, 114, 0.08);
+  border-radius: 999px;
+  padding: 0.2rem 0.6rem;
 }
 .ops { display: flex; gap: 0.6rem; flex-wrap: wrap; }
 .progress { color: var(--accent); font-weight: 600; }

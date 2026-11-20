@@ -1,6 +1,7 @@
 package com.cms.video.modules.series.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cms.video.common.BizException;
@@ -41,19 +42,56 @@ public class SeriesServiceImpl implements SeriesService {
     private final CosService cosService;
 
     @Override
-    public PageVo<SeriesVo> pageFront(String keyword, String category, long page, long size, Long userId) {
-        LambdaQueryWrapper<Series> qw = new LambdaQueryWrapper<Series>().eq(Series::getStatus, 1);
+    public PageVo<SeriesVo> pageFront(String keyword, String category, String tag, String sort, long page, long size, Long userId) {
+        // 用 QueryWrapper：点赞排序要按子查询 (SELECT SUM(like_count) FROM video ...) 排，
+        // LambdaQueryWrapper 写不了这种表达式排序。
+        QueryWrapper<Series> qw = new QueryWrapper<Series>().eq("status", 1);
         if (StringUtils.hasText(keyword)) {
-            qw.like(Series::getTitle, keyword);
+            qw.like("title", keyword);
         }
         if (StringUtils.hasText(category)) {
-            qw.eq(Series::getCategory, category);
+            qw.eq("category", category);
         }
-        qw.orderByDesc(Series::getId);
+        if (StringUtils.hasText(tag)) {
+            // tags 是逗号分隔，FIND_IN_SET 精确匹配单个标签，避免 LIKE 把“重生”匹配到“重生之我在”
+            qw.apply("FIND_IN_SET({0}, tags)", tag.trim());
+        }
+        if ("hot".equals(sort)) {
+            // 当前热播：合集播放数倒序（VideoServiceImpl 每次播放都会 +1）
+            qw.orderByDesc("play_count");
+        } else if ("likes".equals(sort)) {
+            // 点赞最多：合集下所有已上架单集的点赞数之和倒序
+            qw.orderByDesc("(SELECT COALESCE(SUM(like_count),0) FROM video WHERE video.series_id = series.id AND video.status = 1)");
+        }
+        // 最新更新默认按 id 倒序（不用 updated_at：播放计数更新也会刷新 updated_at，会把热播的顶上来）
+        qw.orderByDesc("id");
         Page<Series> p = seriesMapper.selectPage(new Page<>(page, size), qw);
         List<SeriesVo> list = p.getRecords().stream().map(this::toVo).collect(Collectors.toList());
         fillUserFlags(list, userId);
+        fillLikeCounts(list);
         return PageVo.of(p.getTotal(), list);
+    }
+
+    /** 一次分组查询补齐当前页每个合集的点赞总数（合集下各单集 like_count 之和）。 */
+    private void fillLikeCounts(List<SeriesVo> list) {
+        if (list.isEmpty()) {
+            return;
+        }
+        List<Long> ids = list.stream().map(SeriesVo::getId).collect(Collectors.toList());
+        List<Map<String, Object>> rows = videoMapper.selectMaps(new QueryWrapper<Video>()
+                .select("series_id", "COALESCE(SUM(like_count),0) AS total")
+                .eq("status", 1)
+                .in("series_id", ids)
+                .groupBy("series_id"));
+        Map<Long, Long> totals = new HashMap<>();
+        for (Map<String, Object> row : rows) {
+            Object sid = row.get("series_id");
+            Object total = row.get("total");
+            if (sid instanceof Number && total instanceof Number) {
+                totals.put(((Number) sid).longValue(), ((Number) total).longValue());
+            }
+        }
+        list.forEach(s -> s.setLikeCount(totals.getOrDefault(s.getId(), 0L)));
     }
 
     @Override
@@ -151,6 +189,7 @@ public class SeriesServiceImpl implements SeriesService {
         series.setCover(req.getCover() == null ? "" : req.getCover());
         series.setIntro(req.getIntro() == null ? "" : req.getIntro());
         series.setCategory(StringUtils.hasText(req.getCategory()) ? req.getCategory().trim() : "AI");
+        series.setTags(normalizeTags(req.getTags()));
         series.setStatus(req.getStatus() == null ? 1 : req.getStatus());
         if (req.getId() == null) {
             seriesMapper.insert(series);
@@ -168,6 +207,7 @@ public class SeriesServiceImpl implements SeriesService {
         series.setCover("");
         series.setIntro(req.getIntro() == null ? "" : req.getIntro());
         series.setCategory(StringUtils.hasText(req.getCategory()) ? req.getCategory().trim() : "AI");
+        series.setTags("");
         series.setStatus(0);
         series.setPlayCount(0L);
         series.setFavCount(0L);
@@ -295,6 +335,7 @@ public class SeriesServiceImpl implements SeriesService {
         vo.setCover(s.getCover());
         vo.setIntro(s.getIntro());
         vo.setCategory(s.getCategory());
+        vo.setTags(s.getTags());
         vo.setStatus(s.getStatus());
         vo.setEpCount(s.getEpCount());
         vo.setPlayCount(s.getPlayCount());
@@ -309,11 +350,27 @@ public class SeriesServiceImpl implements SeriesService {
         vo.setCover(s.getCover());
         vo.setIntro(s.getIntro());
         vo.setCategory(s.getCategory());
+        vo.setTags(s.getTags());
         vo.setStatus(s.getStatus());
         vo.setEpCount(s.getEpCount());
         vo.setPlayCount(s.getPlayCount());
         vo.setFavCount(s.getFavCount());
         return vo;
+    }
+
+    /** 标签归一化：支持中英文逗号、顿号分隔，去空格、去重，用英文逗号拼回。空返回 ""。 */
+    private String normalizeTags(String tags) {
+        if (!StringUtils.hasText(tags)) {
+            return "";
+        }
+        LinkedHashSet<String> set = new LinkedHashSet<>();
+        for (String t : tags.split("[,，、]")) {
+            String v = t.trim();
+            if (!v.isEmpty()) {
+                set.add(v);
+            }
+        }
+        return String.join(",", set);
     }
 
     private VideoVo toVideoVo(Video v) {

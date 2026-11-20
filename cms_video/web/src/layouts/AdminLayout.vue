@@ -67,6 +67,7 @@ import { computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   Box,
+  ChatDotRound,
   Collection,
   DataAnalysis,
   Document,
@@ -89,6 +90,7 @@ const businessMenus = [
   { path: '/admin/series', label: '合集管理', icon: Collection },
   { path: '/admin/upload', label: '上传记录', icon: Upload },
   { path: '/admin/review', label: '投稿审核', icon: Document },
+  { path: '/admin/comments', label: '评论管理', icon: ChatDotRound },
 ]
 
 const systemMenus = [

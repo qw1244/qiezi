@@ -17,6 +17,7 @@ public class Series {
     private String cover;
     private String intro;
     private String category;
+    private String tags;
     private Integer status;
     private Integer epCount;
     private Long playCount;

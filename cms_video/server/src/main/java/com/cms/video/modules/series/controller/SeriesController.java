@@ -19,9 +19,11 @@ public class SeriesController {
     @GetMapping("/list")
     public ApiRes<PageVo<SeriesVo>> list(@RequestParam(required = false) String keyword,
                                          @RequestParam(required = false) String category,
+                                         @RequestParam(required = false) String tag,
+                                         @RequestParam(required = false) String sort,
                                          @RequestParam(defaultValue = "1") long page,
                                          @RequestParam(defaultValue = "12") long size) {
-        return ApiRes.ok(seriesService.pageFront(keyword, category, page, size, AuthCtx.id()));
+        return ApiRes.ok(seriesService.pageFront(keyword, category, tag, sort, page, size, AuthCtx.id()));
     }
 
     @GetMapping("/{id}")

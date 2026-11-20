@@ -37,6 +37,7 @@ const router = createRouter({
         { path: 'cos/files', name: 'admin-cos-files', component: () => import('@/views/admin/CosFiles.vue') },
         { path: 'upload', name: 'admin-upload', component: () => import('@/views/admin/UploadJobs.vue') },
         { path: 'review', name: 'admin-review', component: () => import('@/views/admin/Review.vue') },
+        { path: 'comments', name: 'admin-comments', component: () => import('@/views/admin/Comments.vue') },
         { path: 'oplog', name: 'admin-oplog', component: () => import('@/views/admin/OpLog.vue') },
         { path: 'pwd', name: 'admin-pwd', component: () => import('@/views/admin/Pwd.vue') },
       ],

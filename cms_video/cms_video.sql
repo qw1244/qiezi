@@ -135,6 +135,7 @@ CREATE TABLE `series`  (
   `cover` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
   `intro` varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
   `category` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'AI',
+  `tags` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
   `status` tinyint NOT NULL DEFAULT 1,
   `ep_count` int NOT NULL DEFAULT 0,
   `play_count` bigint NOT NULL DEFAULT 0,
@@ -148,7 +149,7 @@ CREATE TABLE `series`  (
 -- ----------------------------
 -- Records of series
 -- ----------------------------
-INSERT INTO `series` VALUES (1, '重活一世之1970', 'https://cmsvideo-1505413267.cos.ap-chengdu.myqcloud.com/cover/20261105/a2b2121e62b2_wp-image-017-1024x1460-21-718x1024.jpg', '男主重生剧情，男频', 1, 3, 106, 1, '2026-11-05 23:20:17', '2026-11-05 23:20:17');
+INSERT INTO `series` VALUES (1, '重活一世之1970', 'https://cmsvideo-1505413267.cos.ap-chengdu.myqcloud.com/cover/20261105/a2b2121e62b2_wp-image-017-1024x1460-21-718x1024.jpg', '男主重生剧情，男频', 'AI', '', 1, 3, 106, 1, '2026-11-05 23:20:17', '2026-11-05 23:20:17');
 
 -- ----------------------------
 -- Table structure for up_item
@@ -314,5 +315,20 @@ CREATE TABLE `watch_log`  (
 -- ----------------------------
 -- Records of watch_log
 -- ----------------------------
+
+-- ----------------------------
+-- Table structure for comment
+-- ----------------------------
+DROP TABLE IF EXISTS `comment`;
+CREATE TABLE `comment`  (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `video_id` bigint NOT NULL,
+  `user_id` bigint NOT NULL,
+  `content` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_video`(`video_id` ASC) USING BTREE,
+  INDEX `idx_user`(`user_id` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
 
 SET FOREIGN_KEY_CHECKS = 1;

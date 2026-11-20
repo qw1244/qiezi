@@ -67,6 +67,7 @@ public class AuthInterceptor implements HandlerInterceptor {
     private boolean isOptional(String path) {
         return path.startsWith("/api/open/")
                 || path.startsWith("/api/series/")
-                || path.startsWith("/api/video/");
+                || path.startsWith("/api/video/")
+                || path.startsWith("/api/comments/video/");
     }
 }
