@@ -9,12 +9,14 @@
                 :ref="bindPlayer"
                 class="player"
                 controls
+                controlslist="nodownload"
                 playsinline
                 autoplay
                 :src="video.playUrl"
                 @timeupdate="onTime"
                 @loadedmetadata="onMeta"
                 @ended="onEnded"
+                @contextmenu.prevent
               />
               <div v-if="tip" class="toast">{{ tip }}</div>
               <div class="watermark">免费看qz53.com</div>
@@ -27,6 +29,25 @@
             </button>
             <button type="button" class="tool" :class="{ on: autoplay }" @click="autoplay = !autoplay">
               {{ autoplay ? '连播' : '单集' }}
+            </button>
+          </div>
+
+          <div class="rail">
+            <button type="button" class="rail-btn" :class="{ liked: video.liked }" @click="toggleLike">
+              <span class="rail-icon">♥</span>
+              <span class="rail-count">{{ video.likeCount || 0 }}</span>
+            </button>
+            <button type="button" class="rail-btn" :class="{ liked: fav }" @click="toggleFav">
+              <span class="rail-icon">★</span>
+              <span class="rail-count">{{ favCount }}</span>
+            </button>
+            <button type="button" class="rail-btn" @click="scrollToComments">
+              <span class="rail-icon">💬</span>
+              <span class="rail-count">{{ commentTotal }}</span>
+            </button>
+            <button type="button" class="rail-btn" @click="shareVideo">
+              <span class="rail-icon">↗</span>
+              <span class="rail-count">分享</span>
             </button>
           </div>
         </div>
@@ -51,13 +72,6 @@
         </div>
 
         <div class="actions">
-          <button type="button" class="act" :class="{ liked: video.liked }" @click="toggleLike">
-            {{ video.liked ? '已赞' : '点赞' }}
-          </button>
-          <button type="button" class="act" :class="{ liked: fav }" @click="toggleFav">
-            {{ fav ? '已收藏' : '收藏' }}
-          </button>
-          <button type="button" class="act" @click="shareVideo">分享</button>
           <button type="button" class="act" @click="$router.push(`/series/${video.seriesId}`)">详情</button>
           <button type="button" class="act ghost" @click="playPrev" :disabled="!prevEp || animating">上一集</button>
           <button type="button" class="act primary" @click="playNext(false)" :disabled="animating">下一集</button>
@@ -380,6 +394,13 @@ async function shareVideo() {
   }
 }
 
+function scrollToComments() {
+  const el = document.querySelector('.comments')
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  const ta = document.querySelector('.cmt-post textarea') as HTMLTextAreaElement | null
+  if (ta) window.setTimeout(() => ta.focus(), 500)
+}
+
 async function loadComments(page: number) {
   if (!video.value?.id) return
   const res: any = await http.get(`/comments/video/${video.value.id}`, {
@@ -585,10 +606,53 @@ onBeforeUnmount(() => {
 .tool.on {
   background: rgba(254, 44, 85, 0.92);
 }
+.rail {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: center;
+}
+.rail-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  color: #fff;
+}
+.rail-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  line-height: 1;
+}
+.rail-btn.liked .rail-icon {
+  color: #fe2c55;
+}
+.rail-count {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+}
 .watermark {
   position: absolute;
-  right: 12px;
-  bottom: 56px;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
   z-index: 4;
   pointer-events: none;
   user-select: none;
@@ -653,7 +717,7 @@ onBeforeUnmount(() => {
 }
 .actions {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 0.5rem;
 }
 .act {
