@@ -16,7 +16,7 @@
 
 <script setup lang="ts">
 import { computed, useAttrs } from 'vue'
-import mark from '@/assets/logo-mark.svg'
+import mark from '@/assets/logo-eggplant.png'
 
 withDefaults(defineProps<{ tone?: 'light' | 'dark' }>(), {
   tone: 'dark',

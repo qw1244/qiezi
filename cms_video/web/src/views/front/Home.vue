@@ -1,26 +1,5 @@
 <template>
   <section class="hero">
-    <div class="copy">
-      <p class="eyebrow">SHORT DRAMA</p>
-      <h1>QIEZI</h1>
-      <p class="desc">竖屏短剧，一口气看到爽。收藏合集，接着上次进度继续看。</p>
-      <form class="search" @submit.prevent="load">
-        <span class="search-ico" aria-hidden="true">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="11" cy="11" r="7" />
-            <path d="M20 20l-3.5-3.5" stroke-linecap="round" />
-          </svg>
-        </span>
-        <input
-          v-model="keyword"
-          type="search"
-          placeholder="搜索合集名称"
-          autocomplete="off"
-        />
-        <button type="submit">搜索</button>
-      </form>
-    </div>
-
     <div class="stage" aria-hidden="true">
       <img class="hero-poster" :src="posterImg" alt="" />
     </div>
@@ -94,12 +73,14 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import http from '@/utils/http'
 import { useUserStore } from '@/stores/user'
 import posterImg from '@/assets/hero-poster.jpg'
 
 const user = useUserStore()
+const route = useRoute()
 const keyword = ref('')
 const category = ref('AI')
 const cats = ['AI', '真人']
@@ -171,7 +152,17 @@ async function loadHistory() {
   }
 }
 
+watch(
+  () => route.query.keyword,
+  (k) => {
+    keyword.value = typeof k === 'string' ? k : ''
+    page.value = 1
+    load()
+  },
+)
+
 onMounted(() => {
+  keyword.value = typeof route.query.keyword === 'string' ? route.query.keyword : ''
   load()
   loadHistory()
 })
@@ -179,12 +170,7 @@ onMounted(() => {
 
 <style scoped lang="scss">
 .hero {
-  display: grid;
-  grid-template-columns: 1.05fr 0.95fr;
-  gap: 1.5rem;
-  align-items: center;
   padding: 0.8rem 0 2.2rem;
-  min-height: min(58vh, 520px);
 }
 .copy {
   display: grid;

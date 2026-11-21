@@ -3,8 +3,7 @@
     <header class="nav">
       <div class="front-wrap nav-inner">
         <router-link to="/" class="brand-logo-link" aria-label="茄子短剧">
-          <img v-if="!isPlay" class="brand-logo" :src="logoLight" alt="茄子短剧" />
-          <BrandLogo v-else class="sm" tone="dark" />
+          <BrandLogo class="sm" tone="light" />
         </router-link>
         <nav class="links">
           <router-link to="/">发现</router-link>
@@ -12,6 +11,14 @@
           <router-link to="/history">足迹</router-link>
           <router-link to="/upload">投稿</router-link>
         </nav>
+        <form class="nav-search" @submit.prevent="onSearch">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <circle cx="11" cy="11" r="7" />
+            <path d="M20 20l-3.5-3.5" stroke-linecap="round" />
+          </svg>
+          <input v-model="navKeyword" type="search" placeholder="搜索合集名称" autocomplete="off" />
+          <button type="submit">搜索</button>
+        </form>
         <div class="actions">
           <template v-if="user.token">
             <router-link to="/profile" class="user">
@@ -35,16 +42,25 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import BrandLogo from '@/components/BrandLogo.vue'
-import logoLight from '@/assets/logo-front.png'
 
 const user = useUserStore()
 const router = useRouter()
 const route = useRoute()
 const isPlay = computed(() => route.name === 'play')
+const navKeyword = ref('')
+function onSearch() {
+  const q = navKeyword.value.trim()
+  router.push({ name: 'home', query: q ? { keyword: q } : {} })
+}
+watch(
+  () => route.query.keyword,
+  (k) => { navKeyword.value = typeof k === 'string' ? k : '' },
+  { immediate: true },
+)
 const navAvatarLetter = computed(() => {
   const name = user.profile?.nickname || user.profile?.username || '我'
   return String(name).trim().charAt(0).toUpperCase() || '我'
@@ -66,7 +82,7 @@ function onLogout() {
   top: 0;
   z-index: 20;
   backdrop-filter: blur(14px);
-  background: rgba(243, 239, 230, 0.78);
+  background: rgba(244, 238, 250, 0.8);
   border-bottom: 1px solid var(--line);
   transition: background 0.25s ease, border-color 0.25s ease;
 }
@@ -117,6 +133,42 @@ function onLogout() {
   }
   a.router-link-active {
     color: var(--ink);
+  }
+}
+.nav-search {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.25rem 0.25rem 0.8rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid var(--line);
+  width: min(260px, 34vw);
+  color: var(--muted);
+  flex: 0 0 auto;
+  svg { flex: 0 0 auto; }
+  input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    outline: none;
+    background: transparent;
+    font: inherit;
+    font-size: 0.88rem;
+    color: var(--ink);
+    padding: 0.3rem 0;
+  }
+  input::placeholder { color: #9a92a4; }
+  button {
+    border: 0;
+    border-radius: 999px;
+    padding: 0.42rem 0.8rem;
+    background: linear-gradient(135deg, #6e3b72, #4a2952);
+    color: #fff;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    flex: 0 0 auto;
   }
 }
 .actions {
@@ -173,5 +225,6 @@ function onLogout() {
 @media (max-width: 720px) {
   .nav-inner { gap: 0.75rem; flex-wrap: wrap; }
   .links { display: flex; order: 3; flex-basis: 100%; padding-bottom: 0.6rem; overflow-x: auto; }
+  .nav-search { order: 4; flex-basis: 100%; width: 100%; }
 }
 </style>
