@@ -58,7 +58,7 @@
         :to="`/series/${item.id}`"
       >
         <div class="rec-cover" :style="coverStyle(item.cover)">
-          <span v-if="item.epCount" class="badge">{{ item.epCount }} 集</span>
+          <span class="heat">{{ formatHeat(item.playCount) }}热度</span>
         </div>
         <p class="rec-title">{{ item.title }}</p>
         <p class="rec-stats">▶ {{ item.playCount || 0 }}</p>
@@ -612,5 +612,8 @@ h1 {
 }
 @media (max-width: 720px) {
   .grid { grid-template-columns: repeat(3, 1fr); }
+  .meta .tags {
+    display: none;
+  }
 }
 </style>

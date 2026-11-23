@@ -111,7 +111,7 @@
           :to="`/series/${item.id}`"
         >
           <div class="rec-cover" :style="coverStyle(item.cover)">
-            <span v-if="item.epCount" class="badge">{{ item.epCount }} 集</span>
+            <span class="heat">{{ formatHeat(item.playCount) }}热度</span>
           </div>
           <p class="rec-title">{{ item.title }}</p>
           <p class="rec-stats">▶ {{ item.playCount || 0 }} · ❤ {{ item.likeCount || 0 }}</p>
@@ -198,6 +198,14 @@ function coverStyle(cover: string) {
   return {
     backgroundImage: 'linear-gradient(145deg, #6e3b72, #3f7a5c)',
   }
+}
+
+function formatHeat(n: number) {
+  n = n || 0
+  if (n >= 10000) {
+    return (n / 10000).toFixed(1).replace(/\.0$/, '') + 'w'
+  }
+  return String(n)
 }
 const posting = ref(false)
 const slideName = ref<'slide-next' | 'slide-prev'>('slide-next')
@@ -879,6 +887,16 @@ onBeforeUnmount(() => {
   background-size: cover;
   background-position: center;
   position: relative;
+}
+.heat {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  background: rgba(18,20,26,0.72);
+  color: #fff;
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 999px;
 }
 .rec-title {
   margin: 0;
