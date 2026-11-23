@@ -184,6 +184,7 @@ onMounted(load)
 .ep {
   border: 1px solid var(--line);
   background: var(--card);
+  color: var(--ink);
   border-radius: 12px;
   padding: 0.85rem 0.7rem;
   cursor: pointer;

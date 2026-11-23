@@ -3,7 +3,7 @@
     <header class="nav">
       <div class="front-wrap nav-inner">
         <router-link to="/" class="brand-logo-link" aria-label="茄子短剧">
-          <BrandLogo class="sm" tone="light" />
+          <BrandLogo class="sm" tone="dark" />
         </router-link>
         <nav class="links">
           <router-link to="/">发现</router-link>
@@ -41,7 +41,7 @@
     <footer v-if="!isPlay" class="site-footer">
       <div class="front-wrap footer-inner">
         <div class="foot-col brand-col">
-          <BrandLogo class="sm" tone="light" />
+          <BrandLogo class="sm" tone="dark" />
           <p class="foot-slogan">茄子短剧——短剧新玩法，精彩不设限</p>
           <p class="foot-domain">qz53.com</p>
         </div>
