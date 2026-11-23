@@ -1,5 +1,5 @@
 <template>
-  <div v-if="video" class="theater" :class="orient">
+  <div v-if="video" class="theater" :class="[orient, { 'cmt-open': showComments }]">
     <div class="workspace">
       <section class="screen">
         <div class="stage-slot">
@@ -41,7 +41,7 @@
               <span class="rail-icon">★</span>
               <span class="rail-count">{{ favCount }}</span>
             </button>
-            <button type="button" class="rail-btn" @click="scrollToComments">
+            <button type="button" class="rail-btn" @click="toggleComments">
               <span class="rail-icon">💬</span>
               <span class="rail-count">{{ commentTotal }}</span>
             </button>
@@ -99,44 +99,49 @@
       </aside>
     </div>
 
-    <section class="comments">
-      <div class="comments-inner">
-        <div class="cmt-head">
-          <strong>评论</strong>
-          <span>{{ commentTotal }} 条</span>
-        </div>
-        <div class="cmt-post">
-          <el-input
-            v-model="commentText"
-            type="textarea"
-            :rows="2"
-            maxlength="500"
-            show-word-limit
-            placeholder="写下你的评论…"
-          />
-          <el-button type="primary" :loading="posting" :disabled="!commentText.trim()" @click="postComment">
-            发布
-          </el-button>
-        </div>
-        <div v-if="!comments.length" class="cmt-empty">暂无评论，快来抢沙发</div>
-        <ul v-else class="cmt-list">
-          <li v-for="c in comments" :key="c.id" class="cmt">
-            <span class="cmt-avatar">{{ (c.nickname || '匿').slice(0, 1) }}</span>
-            <div class="cmt-body">
-              <p class="cmt-name">
-                {{ c.nickname || '匿名用户' }}
-                <span class="cmt-time">{{ formatTime(c.createdAt) }}</span>
-              </p>
-              <p class="cmt-text">{{ c.content }}</p>
+    <Transition name="sheet">
+      <div v-if="showComments" class="cmt-sheet" @click.self="closeComments">
+        <div class="cmt-panel">
+          <div class="cmt-panel-head">
+            <strong>评论</strong>
+            <span>{{ commentTotal }} 条</span>
+            <button type="button" class="cmt-close" @click="closeComments">✕</button>
+          </div>
+          <div class="cmt-panel-body">
+            <div v-if="!comments.length" class="cmt-empty">暂无评论，快来抢沙发</div>
+            <ul v-else class="cmt-list">
+              <li v-for="c in comments" :key="c.id" class="cmt">
+                <span class="cmt-avatar">{{ (c.nickname || '匿').slice(0, 1) }}</span>
+                <div class="cmt-body">
+                  <p class="cmt-name">
+                    {{ c.nickname || '匿名用户' }}
+                    <span class="cmt-time">{{ formatTime(c.createdAt) }}</span>
+                  </p>
+                  <p class="cmt-text">{{ c.content }}</p>
+                </div>
+                <el-button v-if="c.mine" link type="danger" size="small" @click="deleteComment(c)">删除</el-button>
+              </li>
+            </ul>
+            <div v-if="commentTotal > comments.length" class="cmt-more">
+              <el-button link @click="loadComments(commentPage + 1)">加载更多</el-button>
             </div>
-            <el-button v-if="c.mine" link type="danger" size="small" @click="deleteComment(c)">删除</el-button>
-          </li>
-        </ul>
-        <div v-if="commentTotal > comments.length" class="cmt-more">
-          <el-button link @click="loadComments(commentPage + 1)">加载更多</el-button>
+          </div>
+          <div class="cmt-post">
+            <el-input
+              v-model="commentText"
+              type="textarea"
+              :rows="2"
+              maxlength="500"
+              show-word-limit
+              placeholder="写下你的评论…"
+            />
+            <el-button type="primary" :loading="posting" :disabled="!commentText.trim()" @click="postComment">
+              发布
+            </el-button>
+          </div>
         </div>
       </div>
-    </section>
+    </Transition>
   </div>
 </template>
 
@@ -163,6 +168,7 @@ const comments = ref<any[]>([])
 const commentTotal = ref(0)
 const commentPage = ref(1)
 const commentText = ref('')
+const showComments = ref(false)
 const posting = ref(false)
 const slideName = ref<'slide-next' | 'slide-prev'>('slide-next')
 const animating = ref(false)
@@ -394,11 +400,12 @@ async function shareVideo() {
   }
 }
 
-function scrollToComments() {
-  const el = document.querySelector('.comments')
-  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  const ta = document.querySelector('.cmt-post textarea') as HTMLTextAreaElement | null
-  if (ta) window.setTimeout(() => ta.focus(), 500)
+function toggleComments() {
+  showComments.value = !showComments.value
+}
+
+function closeComments() {
+  showComments.value = false
 }
 
 async function loadComments(page: number) {
@@ -524,6 +531,10 @@ onBeforeUnmount(() => {
   border-radius: 12px;
   background: #000;
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.theater.cmt-open .stage-slot {
+  transform: translateY(-48px);
 }
 .theater.portrait .stage-slot {
   aspect-ratio: 9 / 16;
@@ -788,28 +799,78 @@ onBeforeUnmount(() => {
   color: #fff;
   box-shadow: 0 0 0 1px rgba(254, 44, 85, 0.45);
 }
-.comments {
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-  padding: 1.5rem 1.5rem 2rem;
+/* 抖音式评论底部弹窗 */
+.cmt-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
 }
-.comments-inner {
-  max-width: 860px;
-  margin: 0 auto;
+.cmt-panel {
+  width: 100%;
+  max-width: 720px;
+  max-height: 68vh;
+  background: #141418;
+  border-radius: 16px 16px 0 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 -12px 48px rgba(0, 0, 0, 0.5);
 }
-.cmt-head {
+.cmt-panel-head {
   display: flex;
   align-items: baseline;
   gap: 0.6rem;
+  padding: 1rem 1.2rem 0.6rem;
   strong { font-size: 1.05rem; }
   span {
     color: rgba(244, 241, 234, 0.5);
     font-size: 0.82rem;
   }
 }
+.cmt-close {
+  margin-left: auto;
+  border: 0;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 0.85rem;
+  line-height: 1;
+  flex: none;
+}
+.cmt-panel-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 1.2rem 0.5rem;
+}
+.sheet-enter-active,
+.sheet-leave-active {
+  transition: opacity 0.3s ease;
+}
+.sheet-enter-active .cmt-panel,
+.sheet-leave-active .cmt-panel {
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.sheet-enter-from,
+.sheet-leave-to {
+  opacity: 0;
+}
+.sheet-enter-from .cmt-panel,
+.sheet-leave-to .cmt-panel {
+  transform: translateY(100%);
+}
 .cmt-post {
   display: flex;
   gap: 0.6rem;
-  margin-top: 1rem;
+  padding: 0.8rem 1.2rem 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
   align-items: flex-start;
 }
 .cmt-post .el-textarea {
