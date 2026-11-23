@@ -92,6 +92,28 @@
       @current-change="load"
     />
   </div>
+
+  <section v-if="category === 'AI' && realList.length" class="real-section">
+    <div class="real-head">
+      <h2>真人视频</h2>
+      <button type="button" class="more" @click="pickCat('真人')">查看更多 →</button>
+    </div>
+    <div class="grid">
+      <router-link v-for="item in realList" :key="item.id" class="card" :to="`/series/${item.id}`">
+        <div class="cover" :style="coverStyle(item.cover)">
+          <span v-if="item.epCount" class="badge">{{ item.epCount }} 集</span>
+        </div>
+        <div class="meta">
+          <h3>{{ item.title }}</h3>
+          <p>{{ item.intro || '暂无简介' }}</p>
+          <p class="stats">▶ {{ item.playCount || 0 }} · ❤ {{ item.likeCount || 0 }}</p>
+          <div v-if="item.tags" class="tags">
+            <span v-for="t in splitTags(item.tags)" :key="t" class="tag" @click.prevent.stop="pickTag(t)">#{{ t }}</span>
+          </div>
+        </div>
+      </router-link>
+    </div>
+  </section>
 </template>
 
 <script setup lang="ts">
@@ -115,6 +137,7 @@ const sorts = [
 const tag = ref('')
 const list = ref<any[]>([])
 const recommend = ref<any[]>([])
+const realList = ref<any[]>([])
 const history = ref<any[]>([])
 const page = ref(1)
 const size = 15
@@ -174,6 +197,15 @@ async function loadRecommend() {
   }
 }
 
+async function loadReal() {
+  try {
+    const res: any = await http.get('/series/list', { params: { category: '真人', sort: 'latest', page: 1, size: 10 } })
+    realList.value = res.data.list || []
+  } catch {
+    realList.value = []
+  }
+}
+
 async function loadHistory() {
   if (!user.token) return
   try {
@@ -197,6 +229,7 @@ onMounted(() => {
   keyword.value = typeof route.query.keyword === 'string' ? route.query.keyword : ''
   load()
   loadRecommend()
+  loadReal()
   loadHistory()
 })
 </script>
@@ -534,6 +567,27 @@ h1 {
   display: flex;
   justify-content: center;
   margin-top: 1.8rem;
+}
+.real-section {
+  margin-top: 2.2rem;
+}
+.real-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.9rem;
+  h2 {
+    margin: 0;
+    font-size: 1.15rem;
+  }
+  .more {
+    border: 0;
+    background: none;
+    color: var(--muted);
+    font-size: 0.86rem;
+    cursor: pointer;
+    font: inherit;
+  }
 }
 @media (max-width: 980px) {
   .hero {
