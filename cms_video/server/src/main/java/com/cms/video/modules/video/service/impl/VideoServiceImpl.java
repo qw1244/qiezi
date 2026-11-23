@@ -269,6 +269,7 @@ public class VideoServiceImpl implements VideoService {
         vo.setPlayCount(v.getPlayCount());
         vo.setStatus(v.getStatus());
         vo.setPlayUrl(cosService.buildPlayUrl(v.getCosKey()));
+        vo.setCreatedAt(v.getCreatedAt());
         return vo;
     }
 }

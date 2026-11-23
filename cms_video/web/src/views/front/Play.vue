@@ -1,8 +1,20 @@
 <template>
-  <div v-if="video" class="theater" :class="[orient, { 'cmt-open': showComments }]">
-    <div class="workspace">
-      <section class="screen">
-        <div class="stage-slot">
+  <div v-if="video" class="play-page">
+    <nav class="crumbs">
+      <router-link to="/">首页</router-link>
+      <span class="sep">›</span>
+      <router-link to="/">{{ seriesCategory }}短剧</router-link>
+      <span class="sep">›</span>
+      <router-link :to="`/series/${video.seriesId}`">{{ displayTitle }}</router-link>
+      <span class="sep">›</span>
+      <span class="cur">第 {{ video.epNo }} 集</span>
+    </nav>
+
+    <h1 class="play-title">{{ displayTitle }} 第 {{ video.epNo }} 集</h1>
+
+    <div class="play-layout">
+      <div class="play-main">
+        <div class="stage-slot" :class="orient">
           <Transition :name="slideName">
             <div :key="String(video.id)" class="slide-layer">
               <video
@@ -31,60 +43,101 @@
               {{ autoplay ? '连播' : '单集' }}
             </button>
           </div>
+        </div>
 
-          <div class="rail">
-            <button type="button" class="rail-btn" :class="{ liked: video.liked }" @click="toggleLike">
-              <span class="rail-icon">♥</span>
-              <span class="rail-count">{{ video.likeCount || 0 }}</span>
-            </button>
-            <button type="button" class="rail-btn" :class="{ liked: fav }" @click="toggleFav">
-              <span class="rail-icon">★</span>
-              <span class="rail-count">{{ favCount }}</span>
-            </button>
-            <button type="button" class="rail-btn" @click="toggleComments">
-              <span class="rail-icon">💬</span>
-              <span class="rail-count">{{ commentTotal }}</span>
-            </button>
-            <button type="button" class="rail-btn" @click="shareVideo">
-              <span class="rail-icon">↗</span>
-              <span class="rail-count">分享</span>
-            </button>
+        <div class="play-actions">
+          <button type="button" class="pact" @click="playPrev" :disabled="!prevEp || animating">‹ 上一集</button>
+          <button type="button" class="pact" @click="playNext(false)" :disabled="animating">下一集 ›</button>
+          <button type="button" class="pact" :class="{ liked: video.liked }" @click="toggleLike">♥ {{ video.likeCount || 0 }}</button>
+          <button type="button" class="pact" :class="{ liked: fav }" @click="toggleFav">★ {{ favCount }}</button>
+          <button type="button" class="pact" @click="shareVideo">↗ 分享</button>
+        </div>
+
+        <section class="ep-info">
+          <div class="ep-info-head">
+            <h2>{{ displayTitle }} 第{{ video.epNo }}集</h2>
+            <router-link class="detail-link" :to="`/series/${video.seriesId}`">查看作品详情 ›</router-link>
           </div>
-        </div>
-      </section>
+          <p v-if="uploadDate" class="ep-date">{{ uploadDate }} 上线</p>
+          <div v-if="seriesTags.length" class="ep-tags">
+            <span class="ep-tag cat">{{ seriesCategory }}短剧</span>
+            <span v-for="t in seriesTags" :key="t" class="ep-tag">{{ t }}</span>
+            <span class="ep-tag">{{ epCount }}集</span>
+            <span class="ep-tag">更新中 · 已更新至 {{ epCount }} 集</span>
+          </div>
+          <p v-if="seriesIntro" class="ep-intro" :class="{ expanded: introExpanded }">{{ seriesIntro }}</p>
+          <button v-if="seriesIntro" type="button" class="intro-toggle" @click="introExpanded = !introExpanded">
+            {{ introExpanded ? '收起简介 ∧' : '展开简介 ∨' }}
+          </button>
+        </section>
 
-      <aside class="panel">
-        <div class="panel-head">
-          <p class="eyebrow">正在播放</p>
-          <h1>{{ displayTitle }}</h1>
-          <p class="meta">
-            第 {{ video.epNo }} 集
-            <span>·</span>
-            {{ episodes.length }} 集全
-            <span>·</span>
-            {{ video.likeCount || 0 }} 赞
-            <span>·</span>
-            {{ favCount }} 收藏
-            <span>·</span>
-            {{ commentTotal }} 评论
-          </p>
-          <p v-if="seriesIntro" class="intro">{{ seriesIntro }}</p>
-        </div>
+        <section class="comments">
+          <h2>本剧评论 {{ commentTotal }}</h2>
+          <div class="cmt-post">
+            <span class="cmt-avatar me">{{ (user.profile?.nickname || '我').slice(0, 1) }}</span>
+            <el-input
+              v-model="commentText"
+              type="textarea"
+              :rows="3"
+              maxlength="300"
+              show-word-limit
+              placeholder="友善讨论剧情，避免无提示剧透…"
+            />
+            <el-button type="primary" :loading="posting" :disabled="!commentText.trim()" @click="postComment">
+              提交审核
+            </el-button>
+          </div>
+          <div v-if="!comments.length" class="cmt-empty">暂无评论，快来抢沙发</div>
+          <ul v-else class="cmt-list">
+            <li v-for="c in comments" :key="c.id" class="cmt">
+              <span class="cmt-avatar">{{ (c.nickname || '匿').slice(0, 1) }}</span>
+              <div class="cmt-body">
+                <p class="cmt-name">
+                  {{ c.nickname || '匿名用户' }}
+                  <span class="cmt-time">{{ formatTime(c.createdAt) }}</span>
+                </p>
+                <p class="cmt-text">{{ c.content }}</p>
+              </div>
+              <el-button v-if="c.mine" link type="danger" size="small" @click="deleteComment(c)">删除</el-button>
+            </li>
+          </ul>
+          <div v-if="commentTotal > comments.length" class="cmt-more">
+            <el-button link @click="loadComments(commentPage + 1)">加载更多</el-button>
+          </div>
+        </section>
+      </div>
 
-        <div class="actions">
-          <button type="button" class="act" @click="$router.push(`/series/${video.seriesId}`)">详情</button>
-          <button type="button" class="act ghost" @click="playPrev" :disabled="!prevEp || animating">上一集</button>
-          <button type="button" class="act primary" @click="playNext(false)" :disabled="animating">下一集</button>
-        </div>
+      <aside class="play-side">
+        <section class="series-card">
+          <div class="series-card-head">
+            <h2>{{ displayTitle }}</h2>
+            <router-link class="intro-link" :to="`/series/${video.seriesId}`">简介 ›</router-link>
+          </div>
+          <p class="series-meta">{{ seriesMetaLine }}</p>
+          <p class="series-eps">第 {{ video.epNo }} 集 · 已更新至 {{ epCount }} 集</p>
+          <button type="button" class="follow-btn" :class="{ on: fav }" @click="toggleFav">
+            {{ fav ? '✓ 已追剧' : '🔔 追剧' }}
+          </button>
+        </section>
 
-        <div class="ep-block">
-          <div class="ep-head">
-            <strong>选集</strong>
-            <span>↑↓ 切集 · 空格暂停</span>
+        <section class="ep-list">
+          <div class="ep-list-head">
+            <h2>播放列表</h2>
+            <button type="button" class="reverse-btn" @click="reverseEp = !reverseEp">{{ reverseEp ? '正序' : '倒序' }}</button>
+          </div>
+          <div v-if="epRanges.length > 1" class="ep-ranges">
+            <button
+              v-for="(r, i) in epRanges"
+              :key="i"
+              type="button"
+              class="ep-range"
+              :class="{ active: i === epRange }"
+              @click="epRange = i"
+            >{{ r.label }}</button>
           </div>
           <div class="ep-grid">
             <button
-              v-for="ep in episodes"
+              v-for="ep in visibleEps"
               :key="ep.id"
               type="button"
               class="ep"
@@ -95,72 +148,27 @@
               {{ ep.epNo }}
             </button>
           </div>
-        </div>
+        </section>
+
+        <section v-if="recommend.length" class="rel-rec">
+          <h2>相关推荐</h2>
+          <router-link
+            v-for="item in recommend"
+            :key="item.id"
+            class="rel-card"
+            :to="`/series/${item.id}`"
+          >
+            <div class="rel-cover" :style="coverStyle(item.cover)"></div>
+            <div class="rel-meta">
+              <p class="rel-title">{{ item.title }}</p>
+              <p class="rel-sub">{{ item.intro || '全集在线观看' }}</p>
+              <p class="rel-info">{{ item.category || '' }} · {{ formatHeat(item.playCount) }} 热度</p>
+            </div>
+            <span class="rel-play">▶</span>
+          </router-link>
+        </section>
       </aside>
     </div>
-
-    <section v-if="recommend.length" class="recommend">
-      <div class="rec-head">
-        <h2>推荐视频</h2>
-      </div>
-      <div class="rec-grid">
-        <router-link
-          v-for="item in recommend"
-          :key="item.id"
-          class="rec-card"
-          :to="`/series/${item.id}`"
-        >
-          <div class="rec-cover" :style="coverStyle(item.cover)">
-            <span class="heat">{{ formatHeat(item.playCount) }}热度</span>
-          </div>
-          <p class="rec-title">{{ item.title }}</p>
-        </router-link>
-      </div>
-    </section>
-
-    <Transition name="sheet">
-      <div v-if="showComments" class="cmt-sheet" @click.self="closeComments">
-        <div class="cmt-panel">
-          <div class="cmt-panel-head">
-            <strong>评论</strong>
-            <span>{{ commentTotal }} 条</span>
-            <button type="button" class="cmt-close" @click="closeComments">✕</button>
-          </div>
-          <div class="cmt-panel-body">
-            <div v-if="!comments.length" class="cmt-empty">暂无评论，快来抢沙发</div>
-            <ul v-else class="cmt-list">
-              <li v-for="c in comments" :key="c.id" class="cmt">
-                <span class="cmt-avatar">{{ (c.nickname || '匿').slice(0, 1) }}</span>
-                <div class="cmt-body">
-                  <p class="cmt-name">
-                    {{ c.nickname || '匿名用户' }}
-                    <span class="cmt-time">{{ formatTime(c.createdAt) }}</span>
-                  </p>
-                  <p class="cmt-text">{{ c.content }}</p>
-                </div>
-                <el-button v-if="c.mine" link type="danger" size="small" @click="deleteComment(c)">删除</el-button>
-              </li>
-            </ul>
-            <div v-if="commentTotal > comments.length" class="cmt-more">
-              <el-button link @click="loadComments(commentPage + 1)">加载更多</el-button>
-            </div>
-          </div>
-          <div class="cmt-post">
-            <el-input
-              v-model="commentText"
-              type="textarea"
-              :rows="2"
-              maxlength="500"
-              show-word-limit
-              placeholder="写下你的评论…"
-            />
-            <el-button type="primary" :loading="posting" :disabled="!commentText.trim()" @click="postComment">
-              发布
-            </el-button>
-          </div>
-        </div>
-      </div>
-    </Transition>
   </div>
 </template>
 
@@ -177,6 +185,9 @@ const user = useUserStore()
 const video = ref<any>(null)
 const episodes = ref<any[]>([])
 const seriesIntro = ref('')
+const seriesCategory = ref('AI')
+const seriesTags = ref<string[]>([])
+const seriesDetail = ref<any>(null)
 const player = ref<HTMLVideoElement | null>(null)
 const orient = ref<'landscape' | 'portrait'>('portrait')
 const autoplay = ref(localStorage.getItem('qiezi_autoplay') !== '0')
@@ -187,8 +198,10 @@ const comments = ref<any[]>([])
 const commentTotal = ref(0)
 const commentPage = ref(1)
 const commentText = ref('')
-const showComments = ref(false)
 const recommend = ref<any[]>([])
+const introExpanded = ref(false)
+const epRange = ref(0)
+const reverseEp = ref(false)
 
 function coverStyle(cover: string) {
   if (cover) {
@@ -215,10 +228,45 @@ let tipTimer: number | undefined
 let switching = false
 
 const SLIDE_MS = 480
+const EP_PAGE = 30
 
 const displayTitle = computed(() => {
   if (!video.value) return ''
   return video.value.seriesTitle || video.value.title || `第${video.value.epNo}集`
+})
+
+const epCount = computed(() => episodes.value.length)
+
+const uploadDate = computed(() => {
+  const t = video.value?.createdAt
+  if (!t) return ''
+  return String(t).slice(0, 10)
+})
+
+const seriesMetaLine = computed(() => {
+  const parts: string[] = []
+  const y = uploadDate.value ? uploadDate.value.slice(0, 4) : ''
+  if (y) parts.push(y)
+  parts.push(`${seriesCategory.value}短剧`)
+  if (seriesTags.value.length) parts.push(seriesTags.value.join(' '))
+  return parts.join(' · ')
+})
+
+const epRanges = computed(() => {
+  const total = episodes.value.length
+  const ranges: { label: string; start: number; end: number }[] = []
+  for (let s = 0; s < total; s += EP_PAGE) {
+    const e = Math.min(s + EP_PAGE, total)
+    ranges.push({ label: `${s + 1}-${e}`, start: s, end: e })
+  }
+  return ranges
+})
+
+const visibleEps = computed(() => {
+  const r = epRanges.value[epRange.value]
+  if (!r) return episodes.value
+  const list = episodes.value.slice(r.start, r.end)
+  return reverseEp.value ? [...list].reverse() : list
 })
 
 const currentIndex = computed(() =>
@@ -283,6 +331,7 @@ function goEp(id: number | string, dir?: 'next' | 'prev') {
 async function load() {
   switching = false
   lastSent = 0
+  introExpanded.value = false
   const res: any = await http.get(`/video/play/${route.params.id}`)
   video.value = res.data
   await loadEpisodes(res.data.seriesId)
@@ -304,10 +353,15 @@ async function loadEpisodes(seriesId: number) {
     return
   }
   const res: any = await http.get(`/series/${seriesId}`)
+  seriesDetail.value = res.data
   episodes.value = res.data?.videos || []
   seriesIntro.value = res.data?.intro || ''
+  seriesCategory.value = res.data?.category || 'AI'
+  seriesTags.value = (res.data?.tags || '').split(',').map((t: string) => t.trim()).filter(Boolean)
   fav.value = !!res.data?.fav
   favCount.value = res.data?.favCount || 0
+  const idx = Math.floor(((video.value?.epNo || 1) - 1) / EP_PAGE)
+  epRange.value = idx
 }
 
 function onMeta() {
@@ -438,14 +492,6 @@ async function shareVideo() {
   }
 }
 
-function toggleComments() {
-  showComments.value = !showComments.value
-}
-
-function closeComments() {
-  showComments.value = false
-}
-
 async function loadComments(page: number) {
   if (!video.value?.id) return
   const res: any = await http.get(`/comments/video/${video.value.id}`, {
@@ -517,7 +563,6 @@ function onKey(e: KeyboardEvent) {
     e.stopPropagation()
     playPrev()
   } else if (e.key === ' ' || e.key === 'k' || e.key === 'K') {
-    
     e.preventDefault()
     e.stopPropagation()
     togglePlay()
@@ -549,28 +594,49 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped lang="scss">
-.theater {
-  min-height: calc(100vh - 64px);
-  color: #f4f1ea;
-  background:
-    radial-gradient(ellipse at 20% 0%, rgba(254, 44, 85, 0.12), transparent 42%),
-    radial-gradient(ellipse at 90% 20%, rgba(110, 59, 114, 0.18), transparent 36%),
-    #0b0b0f;
-}
-.workspace {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 340px;
-  gap: 0;
-  min-height: calc(100vh - 64px);
-  max-width: 1440px;
+.play-page {
+  max-width: 1280px;
   margin: 0 auto;
+  padding: 1.2rem 1rem 3rem;
+  color: #f4f1ea;
 }
-.screen {
+.crumbs {
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 1.25rem 1rem 1.5rem 1.5rem;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  font-size: 0.86rem;
+  color: rgba(244, 241, 234, 0.55);
+  margin-bottom: 0.7rem;
+  a {
+    color: rgba(244, 241, 234, 0.55);
+  }
+  a:hover { color: #fff; }
+  .sep { color: rgba(244, 241, 234, 0.35); }
+  .cur {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    padding: 0.15rem 0.5rem;
+  }
+}
+.play-title {
+  margin: 0 0 1rem;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #fff;
+}
+.play-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 1.4rem;
+  align-items: start;
+}
+.play-main {
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
 }
 .stage-slot {
   position: relative;
@@ -579,18 +645,14 @@ onBeforeUnmount(() => {
   border-radius: 12px;
   background: #000;
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
-  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 }
-.theater.cmt-open .stage-slot {
-  transform: translateY(-48px);
-}
-.theater.portrait .stage-slot {
+.stage-slot.portrait {
   aspect-ratio: 9 / 16;
   max-width: min(480px, 100%);
   max-height: calc(100vh - 110px);
   margin: 0 auto;
 }
-.theater.landscape .stage-slot {
+.stage-slot.landscape {
   aspect-ratio: 16 / 9;
   max-height: calc(100vh - 110px);
 }
@@ -607,7 +669,6 @@ onBeforeUnmount(() => {
   object-fit: contain;
   background: #000;
 }
-
 .slide-next-enter-active,
 .slide-next-leave-active,
 .slide-prev-enter-active,
@@ -629,7 +690,6 @@ onBeforeUnmount(() => {
   transform: translateY(-100%);
   opacity: 0.35;
 }
-
 .slide-prev-enter-from {
   transform: translateY(-100%);
   opacity: 0.55;
@@ -643,7 +703,6 @@ onBeforeUnmount(() => {
   transform: translateY(100%);
   opacity: 0.35;
 }
-
 .top-tools {
   position: absolute;
   top: 12px;
@@ -664,48 +723,6 @@ onBeforeUnmount(() => {
 }
 .tool.on {
   background: rgba(254, 44, 85, 0.92);
-}
-.rail {
-  position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 6;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  align-items: center;
-}
-.rail-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3px;
-  background: none;
-  border: 0;
-  padding: 0;
-  cursor: pointer;
-  color: #fff;
-}
-.rail-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(6px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 22px;
-  line-height: 1;
-}
-.rail-btn.liked .rail-icon {
-  color: #fe2c55;
-}
-.rail-count {
-  font-size: 0.72rem;
-  font-weight: 600;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
 }
 .watermark {
   position: absolute;
@@ -734,261 +751,113 @@ onBeforeUnmount(() => {
   font-size: 0.86rem;
   white-space: nowrap;
 }
-.panel {
-  border-left: 1px solid rgba(255, 255, 255, 0.06);
-  background: linear-gradient(180deg, #141418 0%, #101014 100%);
-  padding: 1.35rem 1.2rem 1.5rem;
+.play-actions {
   display: flex;
-  flex-direction: column;
-  gap: 1.1rem;
-  min-height: calc(100vh - 64px);
-}
-.eyebrow {
-  margin: 0 0 0.35rem;
-  color: #fe2c55;
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-}
-.panel-head h1 {
-  margin: 0;
-  font-size: 1.35rem;
-  line-height: 1.35;
-  font-weight: 700;
-}
-.meta {
-  margin: 0.55rem 0 0;
-  color: rgba(244, 241, 234, 0.55);
-  font-size: 0.86rem;
-  display: flex;
+  gap: 0.6rem;
   flex-wrap: wrap;
-  gap: 0.35rem;
 }
-.intro {
-  margin: 0.75rem 0 0;
-  color: rgba(244, 241, 234, 0.68);
-  font-size: 0.86rem;
-  line-height: 1.55;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-.actions {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.5rem;
-}
-.act {
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.04);
+.pact {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
   color: #f4f1ea;
-  border-radius: 10px;
-  padding: 0.65rem 0.5rem;
+  border-radius: 999px;
+  padding: 0.55rem 1.1rem;
   cursor: pointer;
   font-size: 0.88rem;
+  font-weight: 600;
 }
-.act:disabled {
+.pact:disabled {
   opacity: 0.35;
   cursor: not-allowed;
 }
-.act.liked,
-.act.primary {
-  background: #fe2c55;
-  border-color: #fe2c55;
-  color: #fff;
+.pact:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.12);
 }
-.act.ghost:hover:not(:disabled),
-.act:hover:not(:disabled):not(.primary):not(.liked) {
-  background: rgba(255, 255, 255, 0.1);
+.pact.liked {
+  color: #fe2c55;
+  border-color: rgba(254, 44, 85, 0.5);
 }
-.ep-block {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
+.ep-info {
+  background: #141418;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  padding: 1.2rem 1.3rem;
 }
-.ep-head {
+.ep-info-head {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  strong { font-size: 0.95rem; }
-  span {
-    color: rgba(244, 241, 234, 0.4);
-    font-size: 0.75rem;
-  }
-}
-.ep-grid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 0.45rem;
-  overflow: auto;
-  padding-bottom: 0.5rem;
-}
-.ep {
-  aspect-ratio: 1;
-  border: 0;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(244, 241, 234, 0.85);
-  font-weight: 700;
-  cursor: pointer;
-}
-.ep:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.12);
-}
-.ep:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-.ep.active {
-  background: #fe2c55;
-  color: #fff;
-  box-shadow: 0 0 0 1px rgba(254, 44, 85, 0.45);
-}
-/* 推荐视频 */
-.recommend {
-  max-width: 1440px;
-  margin: 0 auto;
-  padding: 0.5rem 1.5rem 2rem;
-}
-.rec-head {
-  display: flex;
-  align-items: baseline;
-  margin-bottom: 0.9rem;
+  gap: 1rem;
   h2 {
     margin: 0;
     font-size: 1.15rem;
-    color: #f4f1ea;
   }
+  .detail-link {
+    flex: none;
+    color: rgba(244, 241, 234, 0.55);
+    font-size: 0.86rem;
+    white-space: nowrap;
+  }
+  .detail-link:hover { color: #fff; }
 }
-.rec-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 1rem;
+.ep-date {
+  margin: 0.5rem 0 0;
+  color: rgba(244, 241, 234, 0.5);
+  font-size: 0.84rem;
 }
-.rec-card {
+.ep-tags {
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  margin-top: 0.8rem;
+}
+.ep-tag {
+  font-size: 0.8rem;
+  color: rgba(244, 241, 234, 0.85);
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  padding: 0.3rem 0.65rem;
+}
+.ep-tag.cat {
+  background: rgba(245, 197, 24, 0.9);
+  color: #111;
+  font-weight: 700;
+}
+.ep-intro {
+  margin: 0.9rem 0 0;
+  color: rgba(244, 241, 234, 0.75);
+  font-size: 0.9rem;
+  line-height: 1.7;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.ep-intro.expanded {
+  display: block;
+}
+.intro-toggle {
+  margin-top: 0.6rem;
+  border: 0;
+  background: none;
+  color: rgba(244, 241, 234, 0.55);
+  font-size: 0.86rem;
+  cursor: pointer;
+  padding: 0;
+}
+.comments {
   background: #141418;
   border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 12px;
-  overflow: hidden;
-  text-decoration: none;
-  color: inherit;
-  transition: transform .2s ease, box-shadow .2s ease;
-  &:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+  border-radius: 16px;
+  padding: 1.2rem 1.3rem;
+  h2 {
+    margin: 0 0 1rem;
+    font-size: 1.1rem;
   }
-}
-.rec-cover {
-  aspect-ratio: 3 / 4;
-  background-size: cover;
-  background-position: center;
-  position: relative;
-}
-.heat {
-  position: absolute;
-  left: 10px;
-  bottom: 10px;
-  background: rgba(18,20,26,0.72);
-  color: #fff;
-  font-size: 12px;
-  padding: 4px 8px;
-  border-radius: 999px;
-}
-.rec-title {
-  margin: 0;
-  padding: 0.7rem 0.8rem 0.85rem;
-  font-size: 0.92rem;
-  font-weight: 600;
-  color: #f4f1ea;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.rec-stats {
-  margin: 0;
-  padding: 0 0.8rem 0.85rem;
-  font-size: 0.8rem;
-  color: rgba(244, 241, 234, 0.5);
-}
-@media (max-width: 980px) {
-  .rec-grid { grid-template-columns: repeat(3, 1fr); }
-}
-
-/* 抖音式评论底部弹窗 */
-.cmt-sheet {
-  position: fixed;
-  inset: 0;
-  z-index: 50;
-  background: rgba(0, 0, 0, 0.55);
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-}
-.cmt-panel {
-  width: 100%;
-  max-width: 720px;
-  max-height: 68vh;
-  background: #141418;
-  border-radius: 16px 16px 0 0;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  box-shadow: 0 -12px 48px rgba(0, 0, 0, 0.5);
-}
-.cmt-panel-head {
-  display: flex;
-  align-items: baseline;
-  gap: 0.6rem;
-  padding: 1rem 1.2rem 0.6rem;
-  strong { font-size: 1.05rem; }
-  span {
-    color: rgba(244, 241, 234, 0.5);
-    font-size: 0.82rem;
-  }
-}
-.cmt-close {
-  margin-left: auto;
-  border: 0;
-  background: rgba(255, 255, 255, 0.08);
-  color: #fff;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  cursor: pointer;
-  font-size: 0.85rem;
-  line-height: 1;
-  flex: none;
-}
-.cmt-panel-body {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  padding: 0 1.2rem 0.5rem;
-}
-.sheet-enter-active,
-.sheet-leave-active {
-  transition: opacity 0.3s ease;
-}
-.sheet-enter-active .cmt-panel,
-.sheet-leave-active .cmt-panel {
-  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
-}
-.sheet-enter-from,
-.sheet-leave-to {
-  opacity: 0;
-}
-.sheet-enter-from .cmt-panel,
-.sheet-leave-to .cmt-panel {
-  transform: translateY(100%);
 }
 .cmt-post {
   display: flex;
-  gap: 0.6rem;
-  padding: 0.8rem 1.2rem 1rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  gap: 0.7rem;
   align-items: flex-start;
 }
 .cmt-post .el-textarea {
@@ -1003,11 +872,11 @@ onBeforeUnmount(() => {
 }
 .cmt-list {
   list-style: none;
-  margin: 1rem 0 0;
+  margin: 1.2rem 0 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.1rem;
 }
 .cmt {
   display: flex;
@@ -1019,13 +888,17 @@ onBeforeUnmount(() => {
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #fe2c55, #6e3b72);
-  color: #fff;
+  background: linear-gradient(135deg, #f5c518, #f59e0b);
+  color: #111;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 0.9rem;
   font-weight: 700;
+}
+.cmt-avatar.me {
+  background: linear-gradient(135deg, #fe2c55, #6e3b72);
+  color: #fff;
 }
 .cmt-body {
   flex: 1;
@@ -1054,20 +927,210 @@ onBeforeUnmount(() => {
   margin-top: 1rem;
   text-align: center;
 }
+.play-side {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  min-width: 0;
+}
+.series-card {
+  background: #141418;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  padding: 1.2rem 1.3rem;
+}
+.series-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.8rem;
+  h2 {
+    margin: 0;
+    font-size: 1.15rem;
+  }
+  .intro-link {
+    flex: none;
+    color: rgba(244, 241, 234, 0.55);
+    font-size: 0.86rem;
+    white-space: nowrap;
+  }
+  .intro-link:hover { color: #fff; }
+}
+.series-meta {
+  margin: 0.6rem 0 0;
+  color: rgba(244, 241, 234, 0.55);
+  font-size: 0.86rem;
+}
+.series-eps {
+  margin: 0.5rem 0 0;
+  color: rgba(244, 241, 234, 0.85);
+  font-size: 0.9rem;
+}
+.follow-btn {
+  width: 100%;
+  margin-top: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.05);
+  color: #f4f1ea;
+  border-radius: 10px;
+  padding: 0.7rem;
+  cursor: pointer;
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+.follow-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+.follow-btn.on {
+  background: #f5c518;
+  border-color: #f5c518;
+  color: #111;
+}
+.ep-list {
+  background: #141418;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  padding: 1.2rem 1.3rem;
+}
+.ep-list-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.9rem;
+  h2 {
+    margin: 0;
+    font-size: 1.1rem;
+    border-left: 3px solid #f5c518;
+    padding-left: 0.6rem;
+  }
+}
+.reverse-btn {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(244, 241, 234, 0.8);
+  border-radius: 8px;
+  padding: 0.35rem 0.7rem;
+  cursor: pointer;
+  font-size: 0.82rem;
+}
+.ep-ranges {
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.8rem;
+}
+.ep-range {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(244, 241, 234, 0.8);
+  border-radius: 8px;
+  padding: 0.35rem 0.8rem;
+  cursor: pointer;
+  font-size: 0.84rem;
+}
+.ep-range.active {
+  background: rgba(245, 197, 24, 0.9);
+  border-color: transparent;
+  color: #111;
+  font-weight: 700;
+}
+.ep-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.45rem;
+  max-height: 420px;
+  overflow-y: auto;
+  padding-right: 0.2rem;
+}
+.ep {
+  aspect-ratio: 1;
+  border: 0;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(244, 241, 234, 0.85);
+  font-weight: 700;
+  cursor: pointer;
+}
+.ep:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.12);
+}
+.ep:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.ep.active {
+  background: #22c55e;
+  color: #fff;
+  box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.45);
+}
+.rel-rec {
+  background: #141418;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  padding: 1.2rem 1.3rem;
+  h2 {
+    margin: 0 0 1rem;
+    font-size: 1.1rem;
+  }
+}
+.rel-card {
+  display: flex;
+  gap: 0.8rem;
+  align-items: center;
+  padding: 0.6rem 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  position: relative;
+  &:first-of-type { border-top: 0; padding-top: 0; }
+}
+.rel-cover {
+  flex: none;
+  width: 64px;
+  aspect-ratio: 3 / 4;
+  border-radius: 8px;
+  background-size: cover;
+  background-position: center;
+}
+.rel-meta {
+  flex: 1;
+  min-width: 0;
+}
+.rel-title {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rel-sub {
+  margin: 0.25rem 0 0;
+  color: rgba(244, 241, 234, 0.55);
+  font-size: 0.82rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rel-info {
+  margin: 0.25rem 0 0;
+  color: rgba(244, 241, 234, 0.5);
+  font-size: 0.78rem;
+}
+.rel-play {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+}
 @media (max-width: 980px) {
-  .workspace {
+  .play-layout {
     grid-template-columns: 1fr;
   }
-  .panel {
-    border-left: 0;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
-    min-height: auto;
-  }
-  .screen {
-    padding: 1rem;
-  }
-  .theater.portrait .stage-slot {
-    max-height: 68vh;
-  }
+  .play-title { font-size: 1.25rem; }
 }
 </style>

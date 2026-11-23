@@ -2,6 +2,8 @@ package com.cms.video.modules.video.vo;
 
 import lombok.Data;
 
+import java.time.LocalDateTime;
+
 @Data
 public class VideoVo {
     private Long id;
@@ -18,4 +20,5 @@ public class VideoVo {
     private String playUrl;
     private Boolean liked;
     private Integer progress;
+    private LocalDateTime createdAt;
 }
