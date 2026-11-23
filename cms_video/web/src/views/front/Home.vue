@@ -117,7 +117,7 @@ const list = ref<any[]>([])
 const recommend = ref<any[]>([])
 const history = ref<any[]>([])
 const page = ref(1)
-const size = 12
+const size = 15
 const total = ref(0)
 
 function coverStyle(cover: string) {
