@@ -41,7 +41,7 @@
                 </div>
               </Transition>
 
-              <div class="player-controls" :class="{ hidden: !showControls }">
+              <div class="player-controls">
                 <div class="pc-time">{{ fmtTime(currentTime) }} / {{ fmtTime(duration) }}</div>
                 <div class="pc-progress" @click="seekByClick">
                   <div class="pc-buffered" :style="{ width: bufferedPct + '%' }"></div>
@@ -268,11 +268,9 @@ const muted = ref(false)
 const speed = ref(1)
 const speeds = [0.5, 0.75, 1, 1.25, 1.5, 2]
 const speedMenu = ref(false)
-const showControls = ref(true)
 const theaterMode = ref(false)
 const centerIcon = ref<'play' | 'pause' | null>(null)
 let centerIconTimer: number | undefined
-let controlsTimer: number | undefined
 
 const playedPct = computed(() => {
   if (!duration.value) return 0
@@ -299,14 +297,6 @@ function flashCenterIcon(icon: 'play' | 'pause') {
       centerIcon.value = null
     }, 600)
   }
-}
-
-function pokeControls() {
-  showControls.value = true
-  if (controlsTimer) window.clearTimeout(controlsTimer)
-  controlsTimer = window.setTimeout(() => {
-    if (isPlaying.value) showControls.value = false
-  }, 3000)
 }
 
 function seekByClick(e: MouseEvent) {
@@ -745,20 +735,11 @@ onMounted(() => {
   load()
   timer = window.setInterval(() => onTime(), 8000)
   window.addEventListener('keydown', onKey, true)
-  const stage = document.querySelector('.stage-slot')
-  if (stage) {
-    stage.addEventListener('mousemove', pokeControls)
-    stage.addEventListener('mouseleave', () => {
-      if (isPlaying.value) showControls.value = false
-    })
-  }
-  pokeControls()
 })
 
 onBeforeUnmount(() => {
   if (timer) clearInterval(timer)
   if (tipTimer) clearTimeout(tipTimer)
-  if (controlsTimer) clearTimeout(controlsTimer)
   if (centerIconTimer) clearTimeout(centerIconTimer)
   window.removeEventListener('keydown', onKey, true)
   onTime()
@@ -967,11 +948,6 @@ onBeforeUnmount(() => {
   z-index: 6;
   padding: 0.5rem 0.9rem 0.7rem;
   background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.75));
-  transition: opacity 0.3s ease;
-}
-.player-controls.hidden {
-  opacity: 0;
-  pointer-events: none;
 }
 .pc-time {
   color: #fff;
