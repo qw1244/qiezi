@@ -549,8 +549,11 @@ h1 {
     overflow: hidden;
     text-overflow: ellipsis;
   }
-  .meta p {
-    width: 100%;
+  .meta p:not(.stats) {
+    display: none;
+  }
+  .meta .tags {
+    display: none;
   }
 }
 </style>
