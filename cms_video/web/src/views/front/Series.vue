@@ -35,6 +35,24 @@
         <small v-if="v.progress">{{ pct(v) }}%</small>
       </button>
     </div>
+
+    <section v-if="recommend.length" class="recommend">
+      <h2 class="sec">推荐视频</h2>
+      <div class="rec-grid">
+        <router-link
+          v-for="item in recommend"
+          :key="item.id"
+          class="rec-card"
+          :to="`/series/${item.id}`"
+        >
+          <div class="rec-cover" :style="coverStyle(item.cover)">
+            <span v-if="item.epCount" class="badge">{{ item.epCount }} 集</span>
+          </div>
+          <p class="rec-title">{{ item.title }}</p>
+          <p class="rec-stats">▶ {{ item.playCount || 0 }} · ❤ {{ item.likeCount || 0 }}</p>
+        </router-link>
+      </div>
+    </section>
   </div>
 </template>
 
@@ -49,6 +67,7 @@ const route = useRoute()
 const router = useRouter()
 const user = useUserStore()
 const detail = ref<any>(null)
+const recommend = ref<any[]>([])
 
 function coverStyle(cover: string) {
   return cover
@@ -64,6 +83,17 @@ function pct(v: any) {
 async function load() {
   const res: any = await http.get(`/series/${route.params.id}`)
   detail.value = res.data
+  loadRecommend()
+}
+
+async function loadRecommend() {
+  try {
+    const res: any = await http.get('/series/list', { params: { sort: 'hot', page: 1, size: 9 } })
+    const list = (res.data.list || []).filter((s: any) => s.id !== detail.value?.id)
+    recommend.value = list.slice(0, 8)
+  } catch {
+    recommend.value = []
+  }
 }
 
 function goPlay() {
@@ -155,8 +185,64 @@ onMounted(load)
   text-align: left;
   small { color: var(--accent); }
 }
+.recommend {
+  margin-top: 0.4rem;
+}
+.rec-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 1rem;
+}
+.rec-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  transition: transform .2s ease, box-shadow .2s ease;
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 16px 40px rgba(18,20,26,0.08);
+  }
+}
+.rec-cover {
+  aspect-ratio: 3 / 4;
+  background-size: cover;
+  background-position: center;
+  position: relative;
+}
+.badge {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  background: rgba(18,20,26,0.72);
+  color: #fff;
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 999px;
+}
+.rec-title {
+  margin: 0;
+  padding: 0.7rem 0.8rem 0.25rem;
+  font-size: 0.92rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rec-stats {
+  margin: 0;
+  padding: 0 0.8rem 0.85rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+@media (max-width: 980px) {
+  .rec-grid { grid-template-columns: repeat(4, 1fr); }
+}
 @media (max-width: 720px) {
   .head { grid-template-columns: 1fr; }
   .cover { max-width: 220px; }
+  .rec-grid { grid-template-columns: repeat(3, 1fr); }
 }
 </style>
