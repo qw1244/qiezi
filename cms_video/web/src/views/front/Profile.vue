@@ -296,8 +296,8 @@ function onLogout() {
   }
   a:hover,
   button:hover {
-    border-color: rgba(110, 59, 114, 0.35);
-    background: #fff;
+    border-color: rgba(245, 197, 24, 0.5);
+    background: rgba(255, 255, 255, 0.06);
     transform: translateY(-1px);
   }
   button {
@@ -311,9 +311,8 @@ function onLogout() {
   padding: 1.45rem 1.5rem 1.35rem;
   border-radius: 24px;
   border: 1px solid var(--line);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(255, 253, 248, 0.96));
-  box-shadow: 0 18px 40px rgba(43, 24, 51, 0.06);
+  background: #141414;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.4);
   animation: rise 0.55s ease 0.06s both;
 }
 
@@ -338,7 +337,8 @@ label {
   input {
     width: 100%;
     border: 1px solid var(--line);
-    background: #fff;
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--ink);
     border-radius: 14px;
     padding: 0.92rem 1rem;
     outline: none;

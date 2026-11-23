@@ -82,8 +82,8 @@ function onLogout() {
   top: 0;
   z-index: 20;
   backdrop-filter: blur(14px);
-  background: rgba(244, 238, 250, 0.8);
-  border-bottom: 1px solid var(--line);
+  background: rgba(10, 10, 10, 0.92);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   transition: background 0.25s ease, border-color 0.25s ease;
 }
 .theater .nav {
@@ -141,8 +141,8 @@ function onLogout() {
   gap: 0.35rem;
   padding: 0.25rem 0.25rem 0.25rem 0.8rem;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.75);
-  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   width: min(260px, 34vw);
   color: var(--muted);
   flex: 0 0 auto;
@@ -158,13 +158,13 @@ function onLogout() {
     color: var(--ink);
     padding: 0.3rem 0;
   }
-  input::placeholder { color: #9a92a4; }
+  input::placeholder { color: #666; }
   button {
     border: 0;
     border-radius: 999px;
     padding: 0.42rem 0.8rem;
-    background: linear-gradient(135deg, #6e3b72, #4a2952);
-    color: #fff;
+    background: linear-gradient(135deg, #f5c518, #f59e0b);
+    color: #111;
     font-size: 0.85rem;
     font-weight: 600;
     cursor: pointer;
@@ -208,8 +208,8 @@ function onLogout() {
   color: var(--ink);
 }
 .solid {
-  background: var(--ink);
-  color: #fff;
+  background: #f5c518;
+  color: #111;
 }
 .main {
   padding: 1.5rem 0 3rem;

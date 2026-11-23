@@ -248,7 +248,8 @@ label {
   input {
     width: 100%;
     border: 1px solid var(--line);
-    background: #fff;
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--ink);
     border-radius: 14px;
     padding: 0.9rem 1rem;
     outline: none;

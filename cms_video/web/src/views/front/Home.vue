@@ -58,9 +58,10 @@
         :to="`/series/${item.id}`"
       >
         <div class="rec-cover" :style="coverStyle(item.cover)">
-          <span class="heat">{{ formatHeat(item.playCount) }}热度</span>
+          <span class="status-badge">更新中 · {{ item.epCount || 0 }}集</span>
         </div>
         <p class="rec-title">{{ item.title }}</p>
+        <p class="rec-meta-line">{{ metaLine(item) }}</p>
       </router-link>
     </div>
   </section>
@@ -68,7 +69,6 @@
   <section class="grid">
     <router-link v-for="item in list" :key="item.id" class="card" :to="`/series/${item.id}`">
       <div class="cover" :style="coverStyle(item.cover)">
-        <span class="heat">{{ formatHeat(item.playCount) }}热度</span>
         <span class="status-badge">更新中 · {{ item.epCount || 0 }}集</span>
       </div>
       <div class="meta">
@@ -101,7 +101,6 @@
     <div class="grid">
       <router-link v-for="item in realList" :key="item.id" class="card" :to="`/series/${item.id}`">
         <div class="cover" :style="coverStyle(item.cover)">
-          <span class="heat">{{ formatHeat(item.playCount) }}热度</span>
           <span class="status-badge">更新中 · {{ item.epCount || 0 }}集</span>
         </div>
         <div class="meta">
@@ -377,9 +376,9 @@ h1 {
   border-color: rgba(110, 59, 114, 0.4);
 }
 .cats button.active {
-  background: linear-gradient(135deg, #6e3b72, #4a2952);
+  background: linear-gradient(135deg, #f5c518, #f59e0b);
   border-color: transparent;
-  color: #fff;
+  color: #111;
   font-weight: 600;
 }
 
@@ -487,9 +486,9 @@ h1 {
 .rec-card {
   flex: 0 0 150px;
   scroll-snap-align: start;
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
+  background: transparent;
+  border: 0;
+  border-radius: 12px;
   overflow: hidden;
   text-decoration: none;
   color: inherit;
@@ -499,11 +498,23 @@ h1 {
   background-size: cover;
   background-position: center;
   position: relative;
+  border-radius: 12px;
+  overflow: hidden;
 }
 .rec-title {
   margin: 0;
-  padding: 0.6rem 0.7rem 0.75rem;
+  padding: 0.55rem 0.15rem 0;
   font-size: 0.88rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rec-meta-line {
+  margin: 0.15rem 0 0;
+  padding: 0 0.15rem;
+  font-size: 0.78rem;
+  color: var(--muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -521,34 +532,20 @@ h1 {
   gap: 1.1rem;
 }
 .card {
-  background: var(--card);
-  border-radius: var(--radius);
+  background: transparent;
+  border: 0;
+  border-radius: 12px;
   overflow: hidden;
-  border: 1px solid var(--line);
-  transition: transform .2s ease, box-shadow .2s ease;
-  &:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 16px 40px rgba(18,20,26,0.08);
-  }
 }
 .cover {
   aspect-ratio: 3 / 4;
   background-size: cover;
   background-position: center;
   position: relative;
-}
-.heat {
-  position: absolute;
-  left: 10px;
-  bottom: 10px;
-  background: rgba(18,20,26,0.72);
-  color: #fff;
-  font-size: 12px;
-  padding: 4px 8px;
-  border-radius: 999px;
+  border-radius: 12px;
+  overflow: hidden;
 }
 .status-badge {
-  display: none;
   position: absolute;
   left: 10px;
   bottom: 10px;
@@ -559,7 +556,12 @@ h1 {
   border-radius: 999px;
 }
 .meta-line {
-  display: none;
+  margin: 0 0 0.3rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .badge {
   position: absolute;
@@ -572,21 +574,16 @@ h1 {
   border-radius: 999px;
 }
 .meta {
-  padding: 0.9rem 1rem 1.1rem;
+  padding: 0.6rem 0.15rem 0;
   h3 {
-    margin: 0 0 0.35rem;
+    margin: 0 0 0.25rem;
     font-size: 1rem;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
   .intro {
-    margin: 0;
-    color: var(--muted);
-    font-size: 0.86rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    display: none;
   }
   .tags {
     display: flex;
@@ -632,6 +629,20 @@ h1 {
     font: inherit;
   }
 }
+/* 深色模板下分页器适配 */
+:deep(.el-pagination.is-background .el-pager li) {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ccc;
+}
+:deep(.el-pagination.is-background .el-pager li.is-active) {
+  background: #f5c518;
+  color: #111;
+}
+:deep(.el-pagination.is-background .btn-prev),
+:deep(.el-pagination.is-background .btn-next) {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ccc;
+}
 @media (max-width: 980px) {
   .hero {
     grid-template-columns: 1fr;
@@ -644,27 +655,15 @@ h1 {
   .meta .tags {
     display: none;
   }
-  .cover .heat {
-    display: none;
-  }
-  .cover .status-badge {
-    display: block;
-  }
-  .meta .meta-line {
-    display: block;
-    margin: 0 0 0.3rem;
-    color: var(--muted);
-    font-size: 0.82rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
   .meta .intro {
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     white-space: normal;
     overflow: hidden;
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.86rem;
   }
 }
 </style>
