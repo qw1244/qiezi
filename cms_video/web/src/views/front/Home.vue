@@ -462,5 +462,13 @@ h1 {
 }
 @media (max-width: 720px) {
   .grid { grid-template-columns: repeat(3, 1fr); }
+  .meta h3 {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .meta p {
+    width: 100%;
+  }
 }
 </style>
