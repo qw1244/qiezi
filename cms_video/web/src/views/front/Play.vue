@@ -1484,7 +1484,21 @@ onBeforeUnmount(() => {
 @media (max-width: 980px) {
   .play-layout {
     grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column;
   }
+  /* 手机上把左右两栏打散，按这个顺序排：视频 → 操作按钮 → 播放列表 → 简介 → 评论 → 合集卡片 → 相关推荐 */
+  .play-main,
+  .play-side {
+    display: contents;
+  }
+  .stage-slot { order: 0; }
+  .play-actions { order: 1; }
+  .ep-list { order: 2; }
+  .ep-info { order: 3; }
+  .comments { order: 4; }
+  .series-card { order: 5; }
+  .rel-rec { order: 6; }
   .play-title { font-size: 1.25rem; }
 }
 </style>
