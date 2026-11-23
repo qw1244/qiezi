@@ -205,8 +205,8 @@ const user = useUserStore()
 const route = useRoute()
 const router = useRouter()
 const keyword = ref('')
-const category = ref('AI')
-const cats = ['AI', '真人']
+const category = ref('全部')
+const cats = ['全部', 'AI', '真人']
 const sort = ref('latest')
 const sorts = [
   { value: 'latest', label: '最新更新' },
@@ -315,7 +315,7 @@ function clearTag() {
 
 async function load() {
   const res: any = await http.get('/series/list', {
-    params: { keyword: keyword.value, category: category.value || undefined, tag: tag.value || undefined, sort: sort.value, page: page.value, size },
+    params: { keyword: keyword.value, category: category.value === '全部' ? undefined : category.value, tag: tag.value || undefined, sort: sort.value, page: page.value, size },
   })
   list.value = res.data.list || []
   total.value = res.data.total || 0
@@ -323,7 +323,7 @@ async function load() {
 
 async function loadHot() {
   try {
-    const res: any = await http.get('/series/list', { params: { sort: 'hot', page: 1, size: 6 } })
+    const res: any = await http.get('/series/list', { params: { sort: 'hot', page: 1, size: 12 } })
     hotList.value = res.data.list || []
     featured.value = hotList.value.slice(0, 4)
   } catch {
@@ -334,7 +334,7 @@ async function loadHot() {
 
 async function loadLatest() {
   try {
-    const res: any = await http.get('/series/list', { params: { sort: 'latest', page: 1, size: 6 } })
+    const res: any = await http.get('/series/list', { params: { sort: 'latest', page: 1, size: 12 } })
     latestList.value = res.data.list || []
   } catch {
     latestList.value = []
@@ -343,7 +343,7 @@ async function loadLatest() {
 
 async function loadAi() {
   try {
-    const res: any = await http.get('/series/list', { params: { category: 'AI', sort: 'latest', page: 1, size: 6 } })
+    const res: any = await http.get('/series/list', { params: { category: 'AI', sort: 'latest', page: 1, size: 12 } })
     aiList.value = res.data.list || []
   } catch {
     aiList.value = []
@@ -352,7 +352,7 @@ async function loadAi() {
 
 async function loadReal() {
   try {
-    const res: any = await http.get('/series/list', { params: { category: '真人', sort: 'latest', page: 1, size: 6 } })
+    const res: any = await http.get('/series/list', { params: { category: '真人', sort: 'latest', page: 1, size: 12 } })
     realList.value = res.data.list || []
   } catch {
     realList.value = []
