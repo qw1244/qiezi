@@ -298,6 +298,8 @@ function flashCenterIcon(icon: 'play' | 'pause') {
     }, 600)
   }
 }
+
+function pokeControls() {
   showControls.value = true
   if (controlsTimer) window.clearTimeout(controlsTimer)
   controlsTimer = window.setTimeout(() => {
