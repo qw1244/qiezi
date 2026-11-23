@@ -50,7 +50,9 @@
                 </div>
                 <div class="pc-row">
                   <div class="pc-left">
+                    <button type="button" class="pc-btn skip-btn" @click="skip(-5)" title="后退 5 秒">⏪<span>5</span></button>
                     <button type="button" class="pc-btn" @click="togglePlay">{{ isPlaying ? '❚❚' : '▶' }}</button>
+                    <button type="button" class="pc-btn skip-btn" @click="skip(5)" title="前进 5 秒"><span>5</span>⏩</button>
                     <button type="button" class="pc-btn" @click="playNext(false)" :disabled="animating">⏭</button>
                     <label class="pc-auto">
                       <input type="checkbox" v-model="autoplay" />
@@ -315,6 +317,16 @@ function seekByClick(e: MouseEvent) {
     player.value.currentTime = ratio * duration.value
     currentTime.value = player.value.currentTime
   }
+}
+
+function skip(seconds: number) {
+  if (!player.value) return
+  const target = (player.value.currentTime || 0) + seconds
+  player.value.currentTime = Math.min(
+    Math.max(0, target),
+    duration.value || player.value.duration || target,
+  )
+  currentTime.value = player.value.currentTime
 }
 
 function setVolume(v: number) {
@@ -1028,6 +1040,17 @@ onBeforeUnmount(() => {
 .pc-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+.skip-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.1rem;
+  font-size: 0.95rem;
+}
+.skip-btn span {
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1;
 }
 .pc-auto {
   display: flex;
