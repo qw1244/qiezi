@@ -1509,6 +1509,7 @@ onBeforeUnmount(() => {
     grid-template-columns: 1fr;
     display: flex;
     flex-direction: column;
+    align-items: stretch;
   }
   /* 手机上把左右两栏打散，按这个顺序排：视频 → 操作按钮 → 播放列表 → 简介 → 评论 → 合集卡片 → 相关推荐 */
   .play-main,
@@ -1525,6 +1526,7 @@ onBeforeUnmount(() => {
   .play-title { font-size: 1.25rem; }
   /* 手机上播放列表调大：每行 4 个、字更大、间距更大，左右顶满屏幕 */
   .ep-list {
+    width: 100%;
     margin: 0 -1rem;
     border-left: 0;
     border-right: 0;
