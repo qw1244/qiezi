@@ -99,6 +99,26 @@
       </aside>
     </div>
 
+    <section v-if="recommend.length" class="recommend">
+      <div class="rec-head">
+        <h2>推荐视频</h2>
+      </div>
+      <div class="rec-grid">
+        <router-link
+          v-for="item in recommend"
+          :key="item.id"
+          class="rec-card"
+          :to="`/series/${item.id}`"
+        >
+          <div class="rec-cover" :style="coverStyle(item.cover)">
+            <span v-if="item.epCount" class="badge">{{ item.epCount }} 集</span>
+          </div>
+          <p class="rec-title">{{ item.title }}</p>
+          <p class="rec-stats">▶ {{ item.playCount || 0 }} · ❤ {{ item.likeCount || 0 }}</p>
+        </router-link>
+      </div>
+    </section>
+
     <Transition name="sheet">
       <div v-if="showComments" class="cmt-sheet" @click.self="closeComments">
         <div class="cmt-panel">
@@ -169,6 +189,16 @@ const commentTotal = ref(0)
 const commentPage = ref(1)
 const commentText = ref('')
 const showComments = ref(false)
+const recommend = ref<any[]>([])
+
+function coverStyle(cover: string) {
+  if (cover) {
+    return { backgroundImage: `url(${cover})` }
+  }
+  return {
+    backgroundImage: 'linear-gradient(145deg, #6e3b72, #3f7a5c)',
+  }
+}
 const posting = ref(false)
 const slideName = ref<'slide-next' | 'slide-prev'>('slide-next')
 const animating = ref(false)
@@ -250,6 +280,7 @@ async function load() {
   video.value = res.data
   await loadEpisodes(res.data.seriesId)
   await loadComments(1)
+  await loadRecommend()
   await nextTick()
   if (player.value) {
     if (video.value.progress > 0) {
@@ -417,6 +448,16 @@ async function loadComments(page: number) {
   commentTotal.value = res.data?.total || 0
   const list = res.data?.list || []
   comments.value = page === 1 ? list : [...comments.value, ...list]
+}
+
+async function loadRecommend() {
+  try {
+    const res: any = await http.get('/series/list', { params: { sort: 'hot', page: 1, size: 9 } })
+    const list = (res.data.list || []).filter((s: any) => s.id !== video.value?.seriesId)
+    recommend.value = list.slice(0, 8)
+  } catch {
+    recommend.value = []
+  }
 }
 
 async function postComment() {
@@ -799,6 +840,66 @@ onBeforeUnmount(() => {
   color: #fff;
   box-shadow: 0 0 0 1px rgba(254, 44, 85, 0.45);
 }
+/* 推荐视频 */
+.recommend {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 0.5rem 1.5rem 2rem;
+}
+.rec-head {
+  display: flex;
+  align-items: baseline;
+  margin-bottom: 0.9rem;
+  h2 {
+    margin: 0;
+    font-size: 1.15rem;
+    color: #f4f1ea;
+  }
+}
+.rec-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+.rec-card {
+  background: #141418;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  transition: transform .2s ease, box-shadow .2s ease;
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+  }
+}
+.rec-cover {
+  aspect-ratio: 3 / 4;
+  background-size: cover;
+  background-position: center;
+  position: relative;
+}
+.rec-title {
+  margin: 0;
+  padding: 0.7rem 0.8rem 0.25rem;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #f4f1ea;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rec-stats {
+  margin: 0;
+  padding: 0 0.8rem 0.85rem;
+  font-size: 0.8rem;
+  color: rgba(244, 241, 234, 0.5);
+}
+@media (max-width: 980px) {
+  .rec-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
 /* 抖音式评论底部弹窗 */
 .cmt-sheet {
   position: fixed;

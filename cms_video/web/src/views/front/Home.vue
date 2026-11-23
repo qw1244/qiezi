@@ -46,6 +46,26 @@
     </div>
   </section>
 
+  <section v-if="recommend.length" class="recommend">
+    <div class="rec-head">
+      <h2>推荐视频</h2>
+    </div>
+    <div class="rec-row">
+      <router-link
+        v-for="item in recommend"
+        :key="item.id"
+        class="rec-card"
+        :to="`/series/${item.id}`"
+      >
+        <div class="rec-cover" :style="coverStyle(item.cover)">
+          <span v-if="item.epCount" class="badge">{{ item.epCount }} 集</span>
+        </div>
+        <p class="rec-title">{{ item.title }}</p>
+        <p class="rec-stats">▶ {{ item.playCount || 0 }}</p>
+      </router-link>
+    </div>
+  </section>
+
   <section class="grid">
     <router-link v-for="item in list" :key="item.id" class="card" :to="`/series/${item.id}`">
       <div class="cover" :style="coverStyle(item.cover)">
@@ -94,6 +114,7 @@ const sorts = [
 ]
 const tag = ref('')
 const list = ref<any[]>([])
+const recommend = ref<any[]>([])
 const history = ref<any[]>([])
 const page = ref(1)
 const size = 12
@@ -144,6 +165,15 @@ async function load() {
   total.value = res.data.total || 0
 }
 
+async function loadRecommend() {
+  try {
+    const res: any = await http.get('/series/list', { params: { sort: 'hot', page: 1, size: 8 } })
+    recommend.value = res.data.list || []
+  } catch {
+    recommend.value = []
+  }
+}
+
 async function loadHistory() {
   if (!user.token) return
   try {
@@ -166,6 +196,7 @@ watch(
 onMounted(() => {
   keyword.value = typeof route.query.keyword === 'string' ? route.query.keyword : ''
   load()
+  loadRecommend()
   loadHistory()
 })
 </script>
@@ -377,6 +408,57 @@ h1 {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.recommend {
+  margin-bottom: 1.6rem;
+}
+.rec-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.8rem;
+  h2 {
+    margin: 0;
+    font-size: 1.15rem;
+  }
+}
+.rec-row {
+  display: flex;
+  gap: 0.9rem;
+  overflow-x: auto;
+  padding-bottom: 0.4rem;
+  scroll-snap-type: x mandatory;
+}
+.rec-card {
+  flex: 0 0 150px;
+  scroll-snap-align: start;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+}
+.rec-cover {
+  aspect-ratio: 3 / 4;
+  background-size: cover;
+  background-position: center;
+  position: relative;
+}
+.rec-title {
+  margin: 0;
+  padding: 0.6rem 0.7rem 0.2rem;
+  font-size: 0.88rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rec-stats {
+  margin: 0;
+  padding: 0 0.7rem 0.75rem;
+  font-size: 0.8rem;
+  color: var(--muted);
 }
 
 .grid {
