@@ -1523,9 +1523,13 @@ onBeforeUnmount(() => {
   .series-card { order: 5; }
   .rel-rec { order: 6; }
   .play-title { font-size: 1.25rem; }
-  /* 手机上播放列表调大：每行 4 个、字更大、间距更大 */
+  /* 手机上播放列表调大：每行 4 个、字更大、间距更大，左右顶满屏幕 */
   .ep-list {
-    padding: 1.4rem 1.2rem;
+    margin: 0 -1rem;
+    border-left: 0;
+    border-right: 0;
+    border-radius: 0;
+    padding: 1.4rem 1rem;
   }
   .ep-list-head h2 {
     font-size: 1.25rem;
