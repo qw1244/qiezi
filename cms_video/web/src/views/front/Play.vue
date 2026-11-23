@@ -27,13 +27,19 @@
                 @timeupdate="onTime"
                 @loadedmetadata="onMeta"
                 @ended="onEnded"
-                @play="isPlaying = true"
-                @pause="isPlaying = false"
+                @play="isPlaying = true; flashCenterIcon('play')"
+                @pause="isPlaying = false; flashCenterIcon('pause')"
                 @click="togglePlay"
                 @contextmenu.prevent
               />
               <div v-if="tip" class="toast">{{ tip }}</div>
               <div class="watermark">免费看qz53.com</div>
+
+              <Transition name="center-icon">
+                <div v-if="centerIcon" class="center-icon" :class="centerIcon">
+                  <span>{{ centerIcon === 'play' ? '▶' : '❚❚' }}</span>
+                </div>
+              </Transition>
 
               <div class="player-controls" :class="{ hidden: !showControls }">
                 <div class="pc-time">{{ fmtTime(currentTime) }} / {{ fmtTime(duration) }}</div>
@@ -262,6 +268,8 @@ const speeds = [0.5, 0.75, 1, 1.25, 1.5, 2]
 const speedMenu = ref(false)
 const showControls = ref(true)
 const theaterMode = ref(false)
+const centerIcon = ref<'play' | 'pause' | null>(null)
+let centerIconTimer: number | undefined
 let controlsTimer: number | undefined
 
 const playedPct = computed(() => {
@@ -281,7 +289,15 @@ function fmtTime(s: number) {
   return `${m}:${String(sec).padStart(2, '0')}`
 }
 
-function pokeControls() {
+function flashCenterIcon(icon: 'play' | 'pause') {
+  centerIcon.value = icon
+  if (centerIconTimer) window.clearTimeout(centerIconTimer)
+  if (icon === 'play') {
+    centerIconTimer = window.setTimeout(() => {
+      centerIcon.value = null
+    }, 600)
+  }
+}
   showControls.value = true
   if (controlsTimer) window.clearTimeout(controlsTimer)
   controlsTimer = window.setTimeout(() => {
@@ -729,6 +745,7 @@ onBeforeUnmount(() => {
   if (timer) clearInterval(timer)
   if (tipTimer) clearTimeout(tipTimer)
   if (controlsTimer) clearTimeout(controlsTimer)
+  if (centerIconTimer) clearTimeout(centerIconTimer)
   window.removeEventListener('keydown', onKey, true)
   onTime()
 })
@@ -891,6 +908,41 @@ onBeforeUnmount(() => {
   color: #fff;
   font-size: 0.86rem;
   white-space: nowrap;
+}
+/* 播放/暂停中间大图标 */
+.center-icon {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 5;
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+.center-icon span {
+  color: #fff;
+  font-size: 2rem;
+  line-height: 1;
+  margin-left: 0.1rem;
+}
+.center-icon.pause span {
+  font-size: 1.7rem;
+  margin-left: 0;
+}
+.center-icon-enter-active,
+.center-icon-leave-active {
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.center-icon-enter-from,
+.center-icon-leave-to {
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.85);
 }
 /* 自定义播放器控制条 */
 .player-controls {
