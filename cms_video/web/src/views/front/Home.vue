@@ -69,9 +69,11 @@
     <router-link v-for="item in list" :key="item.id" class="card" :to="`/series/${item.id}`">
       <div class="cover" :style="coverStyle(item.cover)">
         <span class="heat">{{ formatHeat(item.playCount) }}热度</span>
+        <span class="status-badge">更新中 · {{ item.epCount || 0 }}集</span>
       </div>
       <div class="meta">
         <h3>{{ item.title }}</h3>
+        <p class="meta-line">{{ metaLine(item) }}</p>
         <p class="intro">{{ item.intro || '暂无简介' }}</p>
         <div v-if="item.tags" class="tags">
           <span v-for="t in splitTags(item.tags)" :key="t" class="tag" @click.prevent.stop="pickTag(t)">{{ t }}</span>
@@ -100,9 +102,11 @@
       <router-link v-for="item in realList" :key="item.id" class="card" :to="`/series/${item.id}`">
         <div class="cover" :style="coverStyle(item.cover)">
           <span class="heat">{{ formatHeat(item.playCount) }}热度</span>
+          <span class="status-badge">更新中 · {{ item.epCount || 0 }}集</span>
         </div>
         <div class="meta">
           <h3>{{ item.title }}</h3>
+          <p class="meta-line">{{ metaLine(item) }}</p>
           <p class="intro">{{ item.intro || '暂无简介' }}</p>
           <div v-if="item.tags" class="tags">
             <span v-for="t in splitTags(item.tags)" :key="t" class="tag" @click.prevent.stop="pickTag(t)">{{ t }}</span>
@@ -167,6 +171,18 @@ function formatHeat(n: number) {
     return (n / 10000).toFixed(1).replace(/\.0$/, '') + 'w'
   }
   return String(n)
+}
+
+function firstTag(tags: string) {
+  return (tags || '').split(',').map((t) => t.trim()).filter(Boolean)[0] || ''
+}
+
+function metaLine(item: any) {
+  const parts = [`${item.category || ''}短剧`]
+  const tag = firstTag(item.tags)
+  if (tag) parts.push(tag)
+  parts.push(`${formatHeat(item.playCount)} 热度`)
+  return parts.join(' · ')
 }
 
 function splitTags(tags: string) {
@@ -531,6 +547,20 @@ h1 {
   padding: 4px 8px;
   border-radius: 999px;
 }
+.status-badge {
+  display: none;
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  background: rgba(18,20,26,0.72);
+  color: #fff;
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 999px;
+}
+.meta-line {
+  display: none;
+}
 .badge {
   position: absolute;
   left: 10px;
@@ -610,9 +640,31 @@ h1 {
   .grid { grid-template-columns: repeat(4, 1fr); }
 }
 @media (max-width: 720px) {
-  .grid { grid-template-columns: repeat(3, 1fr); }
+  .grid { grid-template-columns: repeat(2, 1fr); }
   .meta .tags {
     display: none;
+  }
+  .cover .heat {
+    display: none;
+  }
+  .cover .status-badge {
+    display: block;
+  }
+  .meta .meta-line {
+    display: block;
+    margin: 0 0 0.3rem;
+    color: var(--muted);
+    font-size: 0.82rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .meta .intro {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    white-space: normal;
+    overflow: hidden;
   }
 }
 </style>
