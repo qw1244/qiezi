@@ -569,26 +569,16 @@ function onKey(e: KeyboardEvent) {
   }
 }
 
-function onWheel(e: WheelEvent) {
-  if (animating.value) return
-  if (Math.abs(e.deltaY) < 40) return
-  e.preventDefault()
-  if (e.deltaY > 0) playNext(false)
-  else playPrev()
-}
-
 onMounted(() => {
   load()
   timer = window.setInterval(() => onTime(), 8000)
   window.addEventListener('keydown', onKey, true)
-  window.addEventListener('wheel', onWheel, { passive: false })
 })
 
 onBeforeUnmount(() => {
   if (timer) clearInterval(timer)
   if (tipTimer) clearTimeout(tipTimer)
   window.removeEventListener('keydown', onKey, true)
-  window.removeEventListener('wheel', onWheel)
   onTime()
 })
 </script>
