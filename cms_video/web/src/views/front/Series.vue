@@ -49,7 +49,6 @@
             <span class="heat">{{ formatHeat(item.playCount) }}热度</span>
           </div>
           <p class="rec-title">{{ item.title }}</p>
-          <p class="rec-stats">▶ {{ item.playCount || 0 }} · ❤ {{ item.likeCount || 0 }}</p>
         </router-link>
       </div>
     </section>
@@ -242,7 +241,7 @@ onMounted(load)
 }
 .rec-title {
   margin: 0;
-  padding: 0.7rem 0.8rem 0.25rem;
+  padding: 0.7rem 0.8rem 0.85rem;
   font-size: 0.92rem;
   font-weight: 600;
   white-space: nowrap;

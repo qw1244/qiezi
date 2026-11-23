@@ -61,7 +61,6 @@
           <span class="heat">{{ formatHeat(item.playCount) }}热度</span>
         </div>
         <p class="rec-title">{{ item.title }}</p>
-        <p class="rec-stats">▶ {{ item.playCount || 0 }}</p>
       </router-link>
     </div>
   </section>
@@ -487,7 +486,7 @@ h1 {
 }
 .rec-title {
   margin: 0;
-  padding: 0.6rem 0.7rem 0.2rem;
+  padding: 0.6rem 0.7rem 0.75rem;
   font-size: 0.88rem;
   white-space: nowrap;
   overflow: hidden;

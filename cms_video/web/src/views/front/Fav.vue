@@ -37,7 +37,6 @@
           </div>
           <div class="rec-meta">
             <h3>{{ item.title }}</h3>
-            <p>▶ {{ item.playCount || 0 }} · ❤ {{ item.likeCount || 0 }}</p>
           </div>
         </router-link>
       </div>
