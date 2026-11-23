@@ -69,14 +69,13 @@
   <section class="grid">
     <router-link v-for="item in list" :key="item.id" class="card" :to="`/series/${item.id}`">
       <div class="cover" :style="coverStyle(item.cover)">
-        <span v-if="item.epCount" class="badge">{{ item.epCount }} 集</span>
+        <span class="heat">{{ formatHeat(item.playCount) }}热度</span>
       </div>
       <div class="meta">
         <h3>{{ item.title }}</h3>
-        <p>{{ item.intro || '暂无简介' }}</p>
-        <p class="stats">▶ {{ item.playCount || 0 }} · ❤ {{ item.likeCount || 0 }}</p>
+        <p class="intro">{{ item.intro || '暂无简介' }}</p>
         <div v-if="item.tags" class="tags">
-          <span v-for="t in splitTags(item.tags)" :key="t" class="tag" @click.prevent.stop="pickTag(t)">#{{ t }}</span>
+          <span v-for="t in splitTags(item.tags)" :key="t" class="tag" @click.prevent.stop="pickTag(t)">{{ t }}</span>
         </div>
       </div>
     </router-link>
@@ -101,14 +100,13 @@
     <div class="grid">
       <router-link v-for="item in realList" :key="item.id" class="card" :to="`/series/${item.id}`">
         <div class="cover" :style="coverStyle(item.cover)">
-          <span v-if="item.epCount" class="badge">{{ item.epCount }} 集</span>
+          <span class="heat">{{ formatHeat(item.playCount) }}热度</span>
         </div>
         <div class="meta">
           <h3>{{ item.title }}</h3>
-          <p>{{ item.intro || '暂无简介' }}</p>
-          <p class="stats">▶ {{ item.playCount || 0 }} · ❤ {{ item.likeCount || 0 }}</p>
+          <p class="intro">{{ item.intro || '暂无简介' }}</p>
           <div v-if="item.tags" class="tags">
-            <span v-for="t in splitTags(item.tags)" :key="t" class="tag" @click.prevent.stop="pickTag(t)">#{{ t }}</span>
+            <span v-for="t in splitTags(item.tags)" :key="t" class="tag" @click.prevent.stop="pickTag(t)">{{ t }}</span>
           </div>
         </div>
       </router-link>
@@ -162,6 +160,14 @@ function pickSort(v: string) {
   sort.value = v
   page.value = 1
   load()
+}
+
+function formatHeat(n: number) {
+  n = n || 0
+  if (n >= 10000) {
+    return (n / 10000).toFixed(1).replace(/\.0$/, '') + 'w'
+  }
+  return String(n)
 }
 
 function splitTags(tags: string) {
@@ -516,6 +522,16 @@ h1 {
   background-position: center;
   position: relative;
 }
+.heat {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  background: rgba(18,20,26,0.72);
+  color: #fff;
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 999px;
+}
 .badge {
   position: absolute;
   left: 10px;
@@ -531,19 +547,17 @@ h1 {
   h3 {
     margin: 0 0 0.35rem;
     font-size: 1rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
-  p {
+  .intro {
     margin: 0;
     color: var(--muted);
     font-size: 0.86rem;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
+    white-space: nowrap;
     overflow: hidden;
-  }
-  .stats {
-    margin-top: 0.45rem;
-    font-size: 0.82rem;
+    text-overflow: ellipsis;
   }
   .tags {
     display: flex;
@@ -553,14 +567,14 @@ h1 {
   }
   .tag {
     font-size: 0.78rem;
-    color: var(--accent);
-    background: rgba(110, 59, 114, 0.08);
-    border-radius: 999px;
-    padding: 0.15rem 0.55rem;
+    color: #fff;
+    background: rgba(18, 20, 26, 0.82);
+    border-radius: 6px;
+    padding: 0.2rem 0.55rem;
     cursor: pointer;
   }
   .tag:hover {
-    background: rgba(110, 59, 114, 0.16);
+    background: rgba(18, 20, 26, 0.95);
   }
 }
 .pager {
@@ -598,16 +612,5 @@ h1 {
 }
 @media (max-width: 720px) {
   .grid { grid-template-columns: repeat(3, 1fr); }
-  .meta h3 {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .meta p:not(.stats) {
-    display: none;
-  }
-  .meta .tags {
-    display: none;
-  }
 }
 </style>
