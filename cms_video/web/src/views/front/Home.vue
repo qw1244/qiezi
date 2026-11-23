@@ -68,7 +68,7 @@
 
   <section v-if="hotList.length" class="home-section">
     <div class="sec-head">
-      <h2>热播推荐</h2>
+      <h2><span class="sec-icon">▶</span>热播推荐</h2>
       <button type="button" class="more" @click="goHot">完整榜单 →</button>
     </div>
     <div class="grid section-grid">
@@ -92,7 +92,7 @@
 
   <section v-if="latestList.length" class="home-section">
     <div class="sec-head">
-      <h2>最近更新</h2>
+      <h2><span class="sec-icon">▶</span>最近更新</h2>
       <button type="button" class="more" @click="goLatest">查看全部 →</button>
     </div>
     <div class="grid section-grid">
@@ -116,7 +116,7 @@
 
   <section v-if="aiList.length" class="home-section">
     <div class="sec-head">
-      <h2>AI短剧</h2>
+      <h2><span class="sec-icon">▶</span>AI短剧</h2>
       <button type="button" class="more" @click="pickCat('AI')">查看全部 →</button>
     </div>
     <div class="grid section-grid">
@@ -140,7 +140,7 @@
 
   <section v-if="realList.length" class="home-section">
     <div class="sec-head">
-      <h2>真人视频</h2>
+      <h2><span class="sec-icon">▶</span>真人视频</h2>
       <button type="button" class="more" @click="pickCat('真人')">查看全部 →</button>
     </div>
     <div class="grid section-grid">
@@ -164,7 +164,7 @@
 
   <section class="home-section all-section">
     <div class="sec-head">
-      <h2>全部合集</h2>
+      <h2><span class="sec-icon">▶</span>全部合集</h2>
     </div>
     <div class="cats">
       <button
@@ -799,20 +799,50 @@ onUnmounted(() => {
 .sec-head {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
   margin-bottom: 0.9rem;
   h2 {
     margin: 0;
-    font-size: 1.2rem;
+    font-size: 1.55rem;
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
   }
   .more {
     border: 0;
-    background: none;
-    color: var(--muted);
-    font-size: 0.86rem;
+    background: linear-gradient(135deg, #ffd21f, #f5a623);
+    color: #111;
+    font-size: 0.92rem;
+    font-weight: 700;
+    border-radius: 999px;
+    padding: 0.5rem 1.1rem;
     cursor: pointer;
-    font: inherit;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    box-shadow: 0 2px 10px rgba(245, 197, 24, 0.35);
+    white-space: nowrap;
   }
+  .more::before {
+    content: '▶';
+    font-size: 0.72rem;
+  }
+  .more:hover {
+    filter: brightness(1.08);
+  }
+}
+.sec-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #ffd21f, #f5a623);
+  color: #111;
+  font-size: 0.85rem;
+  box-shadow: 0 2px 10px rgba(245, 197, 24, 0.35);
+  flex: 0 0 auto;
 }
 .section-grid {
   grid-template-columns: repeat(5, 1fr);
