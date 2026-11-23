@@ -461,6 +461,6 @@ h1 {
   .grid { grid-template-columns: repeat(4, 1fr); }
 }
 @media (max-width: 720px) {
-  .grid { grid-template-columns: repeat(4, 1fr); }
+  .grid { grid-template-columns: repeat(3, 1fr); }
 }
 </style>
