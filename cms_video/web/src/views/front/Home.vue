@@ -246,12 +246,12 @@ let carTimer: any = null
 const page = ref(1)
 const size = 15
 const total = ref(0)
-// 板块每页显示两排：电脑 6 列 = 12 个，平板 4 列 = 8 个，手机 2 列 = 4 个
+// 板块每页显示两排：电脑 5 列 = 10 个，平板 4 列 = 8 个，手机 2 列 = 4 个
 const winWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1200)
 const sectionSize = computed(() => {
   if (winWidth.value <= 720) return 4
   if (winWidth.value <= 980) return 8
-  return 12
+  return 10
 })
 const hotPage = ref(1)
 const hotTotal = ref(0)
@@ -815,7 +815,7 @@ onUnmounted(() => {
   }
 }
 .section-grid {
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(5, 1fr);
 }
 .sec-pager {
   display: flex;
