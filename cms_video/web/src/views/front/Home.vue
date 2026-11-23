@@ -83,6 +83,11 @@
         </div>
       </router-link>
     </div>
+    <div class="sec-pager">
+      <button type="button" class="sec-page-btn" :disabled="hotPage <= 1" @click="prevHot">‹ 上一页</button>
+      <span class="sec-page-num">第 {{ hotPage }} 页</span>
+      <button type="button" class="sec-page-btn" :disabled="hotPage * sectionSize >= hotTotal" @click="nextHot">下一页 ›</button>
+    </div>
   </section>
 
   <section v-if="latestList.length" class="home-section">
@@ -101,6 +106,11 @@
           <p class="intro">{{ item.intro || '暂无简介' }}</p>
         </div>
       </router-link>
+    </div>
+    <div class="sec-pager">
+      <button type="button" class="sec-page-btn" :disabled="latestPage <= 1" @click="prevLatest">‹ 上一页</button>
+      <span class="sec-page-num">第 {{ latestPage }} 页</span>
+      <button type="button" class="sec-page-btn" :disabled="latestPage * sectionSize >= latestTotal" @click="nextLatest">下一页 ›</button>
     </div>
   </section>
 
@@ -121,6 +131,11 @@
         </div>
       </router-link>
     </div>
+    <div class="sec-pager">
+      <button type="button" class="sec-page-btn" :disabled="aiPage <= 1" @click="prevAi">‹ 上一页</button>
+      <span class="sec-page-num">第 {{ aiPage }} 页</span>
+      <button type="button" class="sec-page-btn" :disabled="aiPage * sectionSize >= aiTotal" @click="nextAi">下一页 ›</button>
+    </div>
   </section>
 
   <section v-if="realList.length" class="home-section">
@@ -139,6 +154,11 @@
           <p class="intro">{{ item.intro || '暂无简介' }}</p>
         </div>
       </router-link>
+    </div>
+    <div class="sec-pager">
+      <button type="button" class="sec-page-btn" :disabled="realPage <= 1" @click="prevReal">‹ 上一页</button>
+      <span class="sec-page-num">第 {{ realPage }} 页</span>
+      <button type="button" class="sec-page-btn" :disabled="realPage * sectionSize >= realTotal" @click="nextReal">下一页 ›</button>
     </div>
   </section>
 
@@ -195,7 +215,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import http from '@/utils/http'
 import { useUserStore } from '@/stores/user'
@@ -226,6 +246,21 @@ let carTimer: any = null
 const page = ref(1)
 const size = 15
 const total = ref(0)
+// 板块每页显示两排：电脑 6 列 = 12 个，平板 4 列 = 8 个，手机 2 列 = 4 个
+const winWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1200)
+const sectionSize = computed(() => {
+  if (winWidth.value <= 720) return 4
+  if (winWidth.value <= 980) return 8
+  return 12
+})
+const hotPage = ref(1)
+const hotTotal = ref(0)
+const latestPage = ref(1)
+const latestTotal = ref(0)
+const aiPage = ref(1)
+const aiTotal = ref(0)
+const realPage = ref(1)
+const realTotal = ref(0)
 
 function coverStyle(cover: string) {
   if (cover) {
@@ -323,39 +358,115 @@ async function load() {
 
 async function loadHot() {
   try {
-    const res: any = await http.get('/series/list', { params: { sort: 'hot', page: 1, size: 12 } })
+    const res: any = await http.get('/series/list', { params: { sort: 'hot', page: hotPage.value, size: sectionSize.value } })
     hotList.value = res.data.list || []
-    featured.value = hotList.value.slice(0, 4)
+    hotTotal.value = res.data.total || 0
+    if (hotPage.value === 1) featured.value = hotList.value.slice(0, 4)
   } catch {
     hotList.value = []
     featured.value = []
   }
 }
 
+function nextHot() {
+  if (hotPage.value * sectionSize.value < hotTotal.value) {
+    hotPage.value++
+    loadHot()
+  }
+}
+
+function prevHot() {
+  if (hotPage.value > 1) {
+    hotPage.value--
+    loadHot()
+  }
+}
+
 async function loadLatest() {
   try {
-    const res: any = await http.get('/series/list', { params: { sort: 'latest', page: 1, size: 12 } })
+    const res: any = await http.get('/series/list', { params: { sort: 'latest', page: latestPage.value, size: sectionSize.value } })
     latestList.value = res.data.list || []
+    latestTotal.value = res.data.total || 0
   } catch {
     latestList.value = []
   }
 }
 
+function nextLatest() {
+  if (latestPage.value * sectionSize.value < latestTotal.value) {
+    latestPage.value++
+    loadLatest()
+  }
+}
+
+function prevLatest() {
+  if (latestPage.value > 1) {
+    latestPage.value--
+    loadLatest()
+  }
+}
+
 async function loadAi() {
   try {
-    const res: any = await http.get('/series/list', { params: { category: 'AI', sort: 'latest', page: 1, size: 12 } })
+    const res: any = await http.get('/series/list', { params: { category: 'AI', sort: 'latest', page: aiPage.value, size: sectionSize.value } })
     aiList.value = res.data.list || []
+    aiTotal.value = res.data.total || 0
   } catch {
     aiList.value = []
   }
 }
 
+function nextAi() {
+  if (aiPage.value * sectionSize.value < aiTotal.value) {
+    aiPage.value++
+    loadAi()
+  }
+}
+
+function prevAi() {
+  if (aiPage.value > 1) {
+    aiPage.value--
+    loadAi()
+  }
+}
+
 async function loadReal() {
   try {
-    const res: any = await http.get('/series/list', { params: { category: '真人', sort: 'latest', page: 1, size: 12 } })
+    const res: any = await http.get('/series/list', { params: { category: '真人', sort: 'latest', page: realPage.value, size: sectionSize.value } })
     realList.value = res.data.list || []
+    realTotal.value = res.data.total || 0
   } catch {
     realList.value = []
+  }
+}
+
+function nextReal() {
+  if (realPage.value * sectionSize.value < realTotal.value) {
+    realPage.value++
+    loadReal()
+  }
+}
+
+function prevReal() {
+  if (realPage.value > 1) {
+    realPage.value--
+    loadReal()
+  }
+}
+
+function onResize() {
+  const w = window.innerWidth
+  const oldSize = sectionSize.value
+  winWidth.value = w
+  if (sectionSize.value !== oldSize) {
+    hotPage.value = 1
+    latestPage.value = 1
+    aiPage.value = 1
+    realPage.value = 1
+    loadHot()
+    loadLatest()
+    loadAi()
+    loadReal()
   }
 }
 
@@ -402,10 +513,12 @@ onMounted(() => {
   loadAi()
   loadReal()
   loadHistory()
+  window.addEventListener('resize', onResize)
 })
 
 onUnmounted(() => {
   stopCarousel()
+  window.removeEventListener('resize', onResize)
 })
 </script>
 
@@ -703,6 +816,36 @@ onUnmounted(() => {
 }
 .section-grid {
   grid-template-columns: repeat(6, 1fr);
+}
+.sec-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1.1rem;
+}
+.sec-page-btn {
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.06);
+  color: #f4f1ea;
+  border-radius: 999px;
+  padding: 0.5rem 1.2rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.sec-page-btn:hover:not(:disabled) {
+  background: #f5c518;
+  border-color: #f5c518;
+  color: #111;
+}
+.sec-page-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.sec-page-num {
+  color: rgba(244, 241, 234, 0.6);
+  font-size: 0.88rem;
 }
 
 .grid {
