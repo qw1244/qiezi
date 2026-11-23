@@ -1,5 +1,5 @@
 <template>
-  <div v-if="video" class="play-page">
+  <div v-if="video" class="play-page" :class="{ 'theater-mode': theaterMode }">
     <nav class="crumbs">
       <router-link to="/">首页</router-link>
       <span class="sep">›</span>
@@ -20,7 +20,6 @@
               <video
                 :ref="bindPlayer"
                 class="player"
-                controls
                 controlslist="nodownload"
                 playsinline
                 autoplay
@@ -28,10 +27,60 @@
                 @timeupdate="onTime"
                 @loadedmetadata="onMeta"
                 @ended="onEnded"
+                @play="isPlaying = true"
+                @pause="isPlaying = false"
+                @click="togglePlay"
                 @contextmenu.prevent
               />
               <div v-if="tip" class="toast">{{ tip }}</div>
               <div class="watermark">免费看qz53.com</div>
+
+              <div class="player-controls" :class="{ hidden: !showControls }">
+                <div class="pc-time">{{ fmtTime(currentTime) }} / {{ fmtTime(duration) }}</div>
+                <div class="pc-progress" @click="seekByClick">
+                  <div class="pc-buffered" :style="{ width: bufferedPct + '%' }"></div>
+                  <div class="pc-played" :style="{ width: playedPct + '%' }"></div>
+                  <div class="pc-dot" :style="{ left: playedPct + '%' }"></div>
+                </div>
+                <div class="pc-row">
+                  <div class="pc-left">
+                    <button type="button" class="pc-btn" @click="togglePlay">{{ isPlaying ? '❚❚' : '▶' }}</button>
+                    <button type="button" class="pc-btn" @click="playNext(false)" :disabled="animating">⏭</button>
+                    <label class="pc-auto">
+                      <input type="checkbox" v-model="autoplay" />
+                      <span>自动连播</span>
+                    </label>
+                  </div>
+                  <div class="pc-right">
+                    <div class="pc-speed">
+                      <button type="button" class="pc-btn speed-btn" @click="speedMenu = !speedMenu">◷ {{ speed }}x</button>
+                      <div v-if="speedMenu" class="speed-menu">
+                        <button
+                          v-for="s in speeds"
+                          :key="s"
+                          type="button"
+                          :class="{ active: s === speed }"
+                          @click="setSpeed(s)"
+                        >{{ s }}x</button>
+                      </div>
+                    </div>
+                    <button type="button" class="pc-btn quality-btn">高清</button>
+                    <div class="pc-volume">
+                      <button type="button" class="pc-btn" @click="toggleMute">{{ muted || volume === 0 ? '🔇' : '🔊' }}</button>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        :value="Math.round(volume * 100)"
+                        class="vol-slider"
+                        @input="setVolume(($event.target as HTMLInputElement).valueAsNumber / 100)"
+                      />
+                    </div>
+                    <button type="button" class="pc-btn" @click="toggleTheater" :title="theaterMode ? '退出剧场' : '剧场模式'">🎬</button>
+                    <button type="button" class="pc-btn" @click="toggleFullscreen" title="全屏">⛶</button>
+                  </div>
+                </div>
+              </div>
             </div>
           </Transition>
 
@@ -202,6 +251,87 @@ const recommend = ref<any[]>([])
 const introExpanded = ref(false)
 const epRange = ref(0)
 const reverseEp = ref(false)
+const isPlaying = ref(false)
+const currentTime = ref(0)
+const duration = ref(0)
+const buffered = ref(0)
+const volume = ref(1)
+const muted = ref(false)
+const speed = ref(1)
+const speeds = [0.5, 0.75, 1, 1.25, 1.5, 2]
+const speedMenu = ref(false)
+const showControls = ref(true)
+const theaterMode = ref(false)
+let controlsTimer: number | undefined
+
+const playedPct = computed(() => {
+  if (!duration.value) return 0
+  return Math.min(100, (currentTime.value / duration.value) * 100)
+})
+
+const bufferedPct = computed(() => {
+  if (!duration.value) return 0
+  return Math.min(100, (buffered.value / duration.value) * 100)
+})
+
+function fmtTime(s: number) {
+  if (!s || !isFinite(s)) return '0:00'
+  const m = Math.floor(s / 60)
+  const sec = Math.floor(s % 60)
+  return `${m}:${String(sec).padStart(2, '0')}`
+}
+
+function pokeControls() {
+  showControls.value = true
+  if (controlsTimer) window.clearTimeout(controlsTimer)
+  controlsTimer = window.setTimeout(() => {
+    if (isPlaying.value) showControls.value = false
+  }, 3000)
+}
+
+function seekByClick(e: MouseEvent) {
+  const el = e.currentTarget as HTMLElement
+  const rect = el.getBoundingClientRect()
+  const ratio = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width))
+  if (player.value && duration.value) {
+    player.value.currentTime = ratio * duration.value
+    currentTime.value = player.value.currentTime
+  }
+}
+
+function setVolume(v: number) {
+  volume.value = Math.min(1, Math.max(0, v))
+  muted.value = volume.value === 0
+  if (player.value) {
+    player.value.volume = volume.value
+    player.value.muted = muted.value
+  }
+}
+
+function toggleMute() {
+  muted.value = !muted.value
+  if (player.value) player.value.muted = muted.value
+}
+
+function setSpeed(s: number) {
+  speed.value = s
+  speedMenu.value = false
+  if (player.value) player.value.playbackRate = s
+}
+
+function toggleTheater() {
+  theaterMode.value = !theaterMode.value
+}
+
+function toggleFullscreen() {
+  const el = document.querySelector('.stage-slot') as HTMLElement | null
+  if (!el) return
+  if (document.fullscreenElement) {
+    document.exitFullscreen().catch(() => undefined)
+  } else {
+    el.requestFullscreen().catch(() => undefined)
+  }
+}
 
 function coverStyle(cover: string) {
   if (cover) {
@@ -365,13 +495,25 @@ async function loadEpisodes(seriesId: number) {
 }
 
 function onMeta() {
-  if (player.value && video.value?.progress > 3) {
-    player.value.currentTime = video.value.progress
+  if (player.value) {
+    duration.value = player.value.duration || 0
+    if (video.value?.progress > 3) {
+      player.value.currentTime = video.value.progress
+    }
   }
 }
 
 function onTime() {
-  if (!user.token || !player.value || !video.value) return
+  if (!player.value) return
+  currentTime.value = player.value.currentTime || 0
+  duration.value = player.value.duration || duration.value
+  try {
+    const b = player.value.buffered
+    if (b && b.length) buffered.value = b.end(b.length - 1)
+  } catch {
+    buffered.value = 0
+  }
+  if (!user.token || !video.value) return
   const now = Math.floor(player.value.currentTime)
   if (Math.abs(now - lastSent) < 5) return
   lastSent = now
@@ -573,11 +715,20 @@ onMounted(() => {
   load()
   timer = window.setInterval(() => onTime(), 8000)
   window.addEventListener('keydown', onKey, true)
+  const stage = document.querySelector('.stage-slot')
+  if (stage) {
+    stage.addEventListener('mousemove', pokeControls)
+    stage.addEventListener('mouseleave', () => {
+      if (isPlaying.value) showControls.value = false
+    })
+  }
+  pokeControls()
 })
 
 onBeforeUnmount(() => {
   if (timer) clearInterval(timer)
   if (tipTimer) clearTimeout(tipTimer)
+  if (controlsTimer) clearTimeout(controlsTimer)
   window.removeEventListener('keydown', onKey, true)
   onTime()
 })
@@ -740,6 +891,165 @@ onBeforeUnmount(() => {
   color: #fff;
   font-size: 0.86rem;
   white-space: nowrap;
+}
+/* 自定义播放器控制条 */
+.player-controls {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 6;
+  padding: 0.5rem 0.9rem 0.7rem;
+  background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.75));
+  transition: opacity 0.3s ease;
+}
+.player-controls.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+.pc-time {
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 600;
+  margin-bottom: 0.35rem;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+.pc-progress {
+  position: relative;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.25);
+  cursor: pointer;
+  margin-bottom: 0.55rem;
+}
+.pc-buffered {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.35);
+}
+.pc-played {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  border-radius: 999px;
+  background: #f5c518;
+}
+.pc-dot {
+  position: absolute;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #f5c518;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+}
+.pc-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.pc-left,
+.pc-right {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+.pc-btn {
+  border: 0;
+  background: none;
+  color: #fff;
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 0.25rem;
+  line-height: 1;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+.pc-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.pc-auto {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: #fff;
+  font-size: 0.82rem;
+  cursor: pointer;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+  white-space: nowrap;
+}
+.pc-auto input {
+  accent-color: #f5c518;
+  cursor: pointer;
+}
+.pc-speed {
+  position: relative;
+}
+.speed-btn {
+  font-size: 0.86rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.speed-menu {
+  position: absolute;
+  bottom: 2rem;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  background: rgba(20, 20, 24, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  overflow: hidden;
+  min-width: 76px;
+  button {
+    border: 0;
+    background: none;
+    color: rgba(255, 255, 255, 0.85);
+    padding: 0.5rem 0.8rem;
+    cursor: pointer;
+    font-size: 0.86rem;
+    text-align: center;
+  }
+  button:hover { background: rgba(255, 255, 255, 0.1); }
+  button.active {
+    background: #f5c518;
+    color: #111;
+    font-weight: 700;
+  }
+}
+.quality-btn {
+  font-size: 0.84rem;
+  font-weight: 700;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 4px;
+  padding: 0.2rem 0.45rem;
+}
+.pc-volume {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.vol-slider {
+  width: 64px;
+  accent-color: #f5c518;
+  cursor: pointer;
+}
+/* 剧场模式：隐藏侧栏，播放器占满 */
+.play-page.theater-mode .play-layout {
+  grid-template-columns: 1fr;
+}
+.play-page.theater-mode .play-side {
+  display: none;
+}
+.play-page.theater-mode .stage-slot.portrait {
+  max-width: min(720px, 100%);
 }
 .play-actions {
   display: flex;
