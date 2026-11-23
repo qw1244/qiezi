@@ -381,7 +381,7 @@ h1 {
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 1.1rem;
 }
 .card {
@@ -458,9 +458,9 @@ h1 {
     grid-template-columns: 1fr;
     min-height: auto;
   }
-  .grid { grid-template-columns: repeat(3, 1fr); }
+  .grid { grid-template-columns: repeat(4, 1fr); }
 }
 @media (max-width: 720px) {
-  .grid { grid-template-columns: repeat(2, 1fr); }
+  .grid { grid-template-columns: repeat(4, 1fr); }
 }
 </style>
